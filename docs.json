@@ -7,10 +7,7 @@
     "light": "#C084FC",
     "dark": "#8B2FD6"
   },
-  "favicon": {
-    "light": "/images/logo-紫色底.png",
-    "dark": "/images/logo-紫色底.png"
-  },
+  "favicon": "https://revor.ai/favicon.ico",
   "navigation": {
     "languages": [
       {

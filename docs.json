@@ -12,27 +12,38 @@
     "languages": [
       {
         "language": "en",
-        "groups": [
+        "default": true,
+        "tabs": [
           {
-            "group": "MCP",
-            "pages": [
-              "index",
-              "install",
-              "connect",
-              "tools",
+            "tab": "MCP",
+            "groups": [
               {
-                "group": "Agent Skills",
+                "group": "MCP",
                 "pages": [
-                  "skills/company-discovery",
-                  "skills/company-research",
-                  "skills/contact-search",
-                  "skills/outreach"
+                  "index",
+                  "install",
+                  "connect",
+                  "tools",
+                  {
+                    "group": "Agent Skills",
+                    "pages": [
+                      "skills/company-discovery",
+                      "skills/company-research",
+                      "skills/contact-search",
+                      "skills/outreach"
+                    ]
+                  }
                 ]
               }
             ]
+          },
+          {
+            "tab": "Guides",
+            "pages": [
+              "guides/index"
+            ]
           }
-        ],
-        "default": true
+        ]
       },
       {
         "language": "cn",

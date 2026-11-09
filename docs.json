@@ -40,7 +40,11 @@
               {
                 "group": "Agent Skills",
                 "pages": []
-              }
+              },
+              "cn/index",
+              "cn/install",
+              "cn/connect",
+              "cn/tools"
             ]
           }
         ]

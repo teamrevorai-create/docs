@@ -1,0 +1,32 @@
+---
+title: "使用 AI 安装 REVOR AI MCP"
+description: "向 AI 助手提供 REVOR AI 远程 MCP 地址、浏览器授权或私密 API Key 配置方式，并在连接后完成验证。"
+sidebarTitle: "AI 安装"
+keywords: ["REVOR AI", "MCP 安装", "AI 助手"]
+---
+
+AI 助手可以把 REVOR AI MCP 添加到支持远程 MCP 的客户端。提供服务器地址，并根据客户端能力选择浏览器授权或私密 API Key 配置。
+
+| 设置 | 正确值 |
+| --- | --- |
+| 名称 | `REVOR AI` |
+| 类型 | 远程 MCP / Streamable HTTP |
+| 服务器地址 | `https://revor.ai/api/mcp` |
+| 浏览器授权 | 自定义 Headers 留空，在 `revor.ai` 完成授权 |
+| API Key 方式 | 将 Key 私密保存在 `x-api-key` Header |
+| 本地启动命令 | 不需要 |
+
+## 发给 AI 助手的指令
+
+```text
+请将 REVOR AI 安装为远程 MCP 服务，地址是 https://revor.ai/api/mcp。
+使用客户端内置的远程 MCP 或连接器功能，不要运行本地服务器或安装 MCP 包。
+如果客户端支持浏览器 OAuth，请将 Headers 留空，由我在 revor.ai 完成授权。
+只有选择 API Key 方式时，才让我在客户端的私密 Secret 或本机配置中填写 Key。
+不要在聊天中索取或打印 Key，也不要覆盖我已有的 MCP 服务。
+连接后调用 revor_whoami 并列出 REVOR AI 工具，不要执行计费查询。
+```
+
+## 验收
+
+客户端显示 REVOR AI 工具，且 `revor_whoami` 能确认正确账户和权限时，连接才算完成。遇到授权问题请查看[连接到 MCP 客户端](/cn/connect)。

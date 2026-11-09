@@ -1,0 +1,33 @@
+---
+title: "REVOR AI MCP"
+description: "将 REVOR AI 的潜客发现、企业研究、联系人搜索、海关贸易数据和授权触达能力接入支持 MCP 的 AI 客户端。"
+keywords: ["REVOR AI", "MCP", "模型上下文协议"]
+---
+
+REVOR AI MCP 让支持 MCP 的 AI 客户端使用潜客发现、企业研究、联系人搜索、海关贸易数据和授权触达工具。这是远程 MCP 服务，无需安装或运行本地服务器。
+
+## 服务器地址
+
+```text
+https://revor.ai/api/mcp
+```
+
+支持远程 MCP OAuth 的客户端可以在浏览器中完成授权。使用 API Key 的客户端应将 Key 保存在私密的 `x-api-key` Header 或 Secret 中。不要把 API Key 发到聊天中，也不要写入共享配置或代码仓库。
+
+## 开始使用
+
+<Columns cols={2}>
+  <Card title="连接客户端" icon="plug" href="/cn/connect">添加远程 MCP 服务，并用 `revor_whoami` 验证连接。</Card>
+  <Card title="让 AI 协助安装" icon="bot" href="/cn/install">向 AI 助手提供正确的地址、授权方式和验收要求。</Card>
+  <Card title="查看 MCP 工具" icon="list" href="/cn/tools">了解各工具能完成的任务。</Card>
+</Columns>
+
+## 可以完成什么
+
+- 创建企业或人物潜客名单并查看结果。
+- 研究企业与市场，按企业官网域名寻找业务联系人。
+- 发现进口商、出口商并分析海关贸易数据。
+- 查看积分、已连接的发送账号和异步任务结果。
+- 在用户确认后，通过已授权账号执行触达。
+
+客户端可见的工具取决于授权权限。

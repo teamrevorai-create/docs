@@ -1,4 +1,4 @@
-// Use the Revor favicon on the docs mounted under revor.ai/docs/mcp.
+// Use the Revor favicon on the docs mounted under revor.ai/docs.
 // Mintlify's generated icon URL is outside this subpath and is not served by the host.
 (() => {
   if (window.__revorDocsFaviconReady) return;
@@ -6,7 +6,7 @@
 
   const updateFavicon = () => {
     if (window.location.hostname !== "revor.ai" ||
-        !window.location.pathname.startsWith("/docs/mcp")) return;
+        !window.location.pathname.startsWith("/docs")) return;
 
     const faviconUrl = "/favicon.ico";
     const links = document.head.querySelectorAll('link[rel~="icon"]');

@@ -1,38 +1,44 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
-  "name": "REVOR AI MCP",
+  "name": "REVOR AI Docs",
   "colors": {
     "primary": "#A548EE",
     "light": "#C084FC",
     "dark": "#8B2FD6"
   },
-  "favicon": "https://revor.ai/favicon.ico",
+  "favicon": "/images/favicon.ico",
   "navigation": {
     "languages": [
       {
         "language": "en",
-        "groups": [
+        "default": true,
+        "tabs": [
           {
-            "group": "MCP",
+            "tab": "MCP",
             "pages": [
-              "index",
-              "install",
-              "connect",
-              "tools",
+              "mcp/overview",
+              "mcp/install",
+              "mcp/connect",
+              "mcp/tools",
               {
                 "group": "Agent Skills",
                 "pages": [
-                  "skills/company-discovery",
-                  "skills/company-research",
-                  "skills/contact-search",
-                  "skills/outreach"
+                  "mcp/skills/company-discovery",
+                  "mcp/skills/company-research",
+                  "mcp/skills/contact-search",
+                  "mcp/skills/outreach"
                 ]
               }
             ]
+          },
+          {
+            "tab": "Guides",
+            "pages": [
+              "guides"
+            ]
           }
-        ],
-        "default": true
+        ]
       },
       {
         "language": "cn",
@@ -49,23 +55,29 @@
             "href": "https://revor.ai/console"
           }
         },
-        "groups": [
+        "tabs": [
           {
-            "group": "MCP",
+            "tab": "MCP",
             "pages": [
-              "cn/index",
-              "cn/install",
-              "cn/connect",
-              "cn/tools",
+              "mcp/cn/overview",
+              "mcp/cn/install",
+              "mcp/cn/connect",
+              "mcp/cn/tools",
               {
                 "group": "Agent Skills",
                 "pages": [
-                  "cn/skills/company-discovery",
-                  "cn/skills/company-research",
-                  "cn/skills/contact-search",
-                  "cn/skills/outreach"
+                  "mcp/cn/skills/company-discovery",
+                  "mcp/cn/skills/company-research",
+                  "mcp/cn/skills/contact-search",
+                  "mcp/cn/skills/outreach"
                 ]
               }
+            ]
+          },
+          {
+            "tab": "指南",
+            "pages": [
+              "guides/cn"
             ]
           }
         ]
@@ -104,10 +116,12 @@
       "linkedin": "https://linkedin.com/company/revor-ai"
     }
   },
-  "seo": {
-    "metatags": {
-      "canonical": "https://revor.ai/docs/mcp"
+  "description": "Guides and MCP documentation for using REVOR AI to discover prospects, research companies, find contacts, and work with trade data.",
+  "redirects": [
+    {
+      "source": "/mcp/cn",
+      "destination": "/mcp/cn/overview",
+      "permanent": true
     }
-  },
-  "description": "Connect REVOR AI through MCP and use Agent Skills for prospect discovery, company research, contacts, trade data, and authorized outreach."
+  ]
 }

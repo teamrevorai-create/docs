@@ -1,7 +1,7 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
-  "name": "Revor AI User Guide",
+  "name": "REVOR AI MCP",
   "colors": {
     "primary": "#A548EE",
     "light": "#C084FC",
@@ -53,8 +53,8 @@
   },
   "seo": {
     "metatags": {
-      "canonical": "https://revor.ai/docs"
+      "canonical": "https://revor.ai/docs/mcp"
     }
   },
-  "description": "Learn to use Revor AI's B2B sales agent: find high-intent buyers, research companies, run outreach on email, LinkedIn, and WhatsApp, and qualify leads."
+  "description": "Connect REVOR AI to MCP-compatible AI clients for prospect discovery, research, contacts, customs trade data, and authorized outreach."
 }

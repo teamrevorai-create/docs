@@ -1,7 +1,7 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
-  "name": "Revor AI User Guide",
+  "name": "REVOR AI MCP",
   "colors": {
     "primary": "#A548EE",
     "light": "#C084FC",
@@ -12,29 +12,68 @@
     "dark": "/images/logo-紫色底.png"
   },
   "navigation": {
-    "pages": [
+    "languages": [
       {
-        "group": "Getting Started",
-        "pages": [
-          "index",
-          "quickstart"
+        "language": "en",
+        "groups": [
+          {
+            "group": "MCP",
+            "pages": [
+              "index",
+              "install",
+              "connect",
+              "tools",
+              {
+                "group": "Agent Skills",
+                "pages": [
+                  "skills/company-discovery",
+                  "skills/company-research",
+                  "skills/contact-search",
+                  "skills/outreach"
+                ]
+              }
+            ]
+          }
+        ],
+        "default": true
+      },
+      {
+        "language": "cn",
+        "navbar": {
+          "links": [
+            {
+              "href": "mailto:support@revor.ai",
+              "label": "联系支持"
+            }
+          ],
+          "primary": {
+            "type": "button",
+            "label": "使用 Revor AI",
+            "href": "https://revor.ai/console"
+          }
+        },
+        "groups": [
+          {
+            "group": "MCP",
+            "pages": [
+              "cn/index",
+              "cn/install",
+              "cn/connect",
+              "cn/tools",
+              {
+                "group": "Agent Skills",
+                "pages": [
+                  "cn/skills/company-discovery",
+                  "cn/skills/company-research",
+                  "cn/skills/contact-search",
+                  "cn/skills/outreach"
+                ]
+              }
+            ]
+          }
         ]
       }
-    ],
-    "global": {
-      "anchors": [
-        {
-          "anchor": "Documentation",
-          "href": "https://mintlify.com/docs",
-          "icon": "book-open-cover"
-        },
-        {
-          "anchor": "Blog",
-          "href": "https://mintlify.com/blog",
-          "icon": "newspaper"
-        }
-      ]
-    }
+    ]
   },
   "logo": {
     "light": "/images/横排组合.png",
@@ -70,8 +109,8 @@
   },
   "seo": {
     "metatags": {
-      "canonical": "https://revor.ai/docs"
+      "canonical": "https://revor.ai/docs/mcp"
     }
   },
-  "description": "Learn to use Revor AI's B2B sales agent: find high-intent buyers, research companies, run outreach on email, LinkedIn, and WhatsApp, and qualify leads."
+  "description": "Connect REVOR AI through MCP and use Agent Skills for prospect discovery, company research, contacts, trade data, and authorized outreach."
 }

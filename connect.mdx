@@ -1,0 +1,38 @@
+---
+title: "Connect an MCP client to REVOR AI"
+description: "Add the REVOR AI remote MCP endpoint to a compatible client using browser authorization or a privately stored API key, then verify access."
+sidebarTitle: "Connect a client"
+keywords:
+  - "REVOR AI"
+  - "MCP client"
+  - "OAuth"
+  - "API key"
+---
+
+Connect REVOR AI to an AI client that supports remote MCP over HTTP. The server URL is `https://revor.ai/api/mcp`; no local server or launch command is required.
+
+## Browser authorization
+
+<Steps>
+  <Step title="Add the remote server">
+    In the client, add a remote MCP service named `REVOR AI` with the server URL above. Leave custom headers empty.
+  </Step>
+  <Step title="Authorize in the browser">
+    Start the connection, sign in on `revor.ai`, and check the application name, account, and requested permissions before selecting Allow access.
+  </Step>
+  <Step title="Verify the account">
+    Return to the client, reload its tools if needed, and call `revor_whoami`.
+  </Step>
+</Steps>
+
+For DoubaoWork, choose `HTTP`, enter the server URL, leave **Custom Headers** empty, and authorize in the browser. No API key, Client ID, or Client Secret is required for this flow.
+
+## API key authentication
+
+If you choose an API key, create or select one at [REVOR AI API Keys](https://revor.ai/my-api-keys). Add the same server URL and store the key in the client private `x-api-key` header or Secret field. A private local configuration on a single-user device is acceptable if its file access is restricted; keep it out of shared folders, cloud sync, and source control.
+
+An explicitly configured API key takes precedence over OAuth. If it is invalid, correct or remove that key rather than expecting an automatic OAuth fallback.
+
+## Check the connection
+
+Ask the client to call `revor_whoami` and list the available REVOR AI tools. If the client cannot connect, confirm that it supports remote MCP and the selected authentication method. See the [MCP tool reference](/tools) for the published tool names.

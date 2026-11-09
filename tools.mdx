@@ -1,0 +1,42 @@
+---
+title: "REVOR AI MCP tool reference"
+description: "Find REVOR AI MCP tools for account checks, prospect discovery, public research, contacts, customs trade data, jobs, and authorized outreach."
+sidebarTitle: "Tool reference"
+keywords:
+  - "REVOR AI"
+  - "MCP tools"
+  - "tool reference"
+---
+
+REVOR AI MCP publishes tools by business capability. The tools visible in your client depend on the permissions granted to its connection.
+
+| Tool | Purpose |
+| --- | --- |
+| `revor_whoami` | Check the authorized account and permissions. |
+| `revor_get_credits` | View available credits. |
+| `revor_list_connect_accounts` | List connected Email, LinkedIn, or WhatsApp accounts. |
+| `revor_research_public_web` | Research companies, markets, or recent developments. |
+| `revor_find_contacts` | Find contacts by verified company domain and role. |
+| `revor_create_prospect_list` | Create a company or person prospect list. |
+| `revor_expand_prospect_list` | Find more qualified prospects for a list. |
+| `revor_list_prospect_lists` | Page through prospect lists. |
+| `revor_get_prospect_list` | Check list status, progress, and criteria. |
+| `revor_get_prospect_search_plan` | Read discovery criteria and search strategy. |
+| `revor_list_prospects` | Page through ranked prospect results. |
+| `revor_customs_company_candidates` | Resolve a name for customs queries. |
+| `revor_customs_discover_companies` | Discover importers or exporters. |
+| `revor_customs_full_report` | Create a customs trade report. |
+| `revor_customs_counterparties` | Query trading counterparties. |
+| `revor_customs_categories` | Query products or HS Code categories. |
+| `revor_customs_trend` | Query trade trends. |
+| `revor_customs_countries` | Query origin or destination countries. |
+| `revor_get_job` | Retrieve job status, result, and billing details. |
+| `revor_cancel_job` | Cancel a queued job before execution begins. |
+| `revor_send_outreach` | Send authorized Email, LinkedIn, or WhatsApp outreach. |
+| `revor_like_linkedin_post` | Find and like a relevant LinkedIn post. |
+
+## How work completes
+
+Some actions return a job or resource ID before results are ready. For a job marked `queued` or `running`, call `revor_get_job` with its ID until it reaches `succeeded` or `failed`. Reading an existing job does not repeat the original charge.
+
+Before outreach, use `revor_list_connect_accounts` to select a send-capable account and confirm the recipient, channel, and content with the user. Billable tools follow REVOR AI API pricing and account limits; `revor_whoami` and `revor_get_credits` are free.

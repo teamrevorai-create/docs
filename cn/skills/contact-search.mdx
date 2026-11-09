@@ -1,0 +1,30 @@
+---
+title: "使用 Agent Skill 搜索企业联系人"
+description: "根据企业已验证的员工官网域名，查找与目标职能相关的业务联系人。"
+sidebarTitle: "联系人搜索"
+keywords:
+  - "REVOR AI"
+  - "Agent Skills"
+  - "MCP"
+---
+
+Revor Contact Search Skill 通过企业已验证的员工官网域名查找相关人员。可按采购、供应链、销售、财务等职能寻找联系人，并返回可用的工作邮箱和 LinkedIn 主页。
+
+## 在 Codex 中安装
+
+在要使用该 Skill 的项目目录中运行：
+
+```bash
+npx skills add laiye-revor/revor-skills --skill revor-contact-search --agent codex
+```
+
+使用 `/skills` 确认安装，然后调用 `$revor-contact-search`，或提出针对某家企业的联系人搜索任务。请保留包含脚本的完整 Skill 目录。
+
+## 必需信息
+
+提供已核实的企业员工域名，例如 `example.com`。企业名称、LinkedIn URL、平台店铺页面或邮箱地址都不能替代已验证的域名。
+
+## 示例请求
+
+- 查找 example.com 的采购和供应链负责人。
+- 查找这家企业的创始人和财务决策者。 该 Skill 通常每家企业只运行一次搜索，并返回简明结果。未经核实的组织层级或资历会标记为推断；只有 API 明确返回已验证状态时，才将邮箱称为已验证。该 Skill 不起草或发送消息。

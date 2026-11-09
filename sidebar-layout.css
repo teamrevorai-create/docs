@@ -94,9 +94,8 @@
     width: calc(var(--sidebar-width) - 2rem);
   }
 
-  #content-container > div:has(> #content-area) {
-    padding-top: 0 !important;
-    margin-top: -2.5rem;
+  #content-container {
+    margin-top: -5rem !important;
   }
 
   #content-area [data-assistant-bar] {

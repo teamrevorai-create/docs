@@ -63,9 +63,22 @@
     left: calc(var(--sidebar-width) - 3.75rem);
   }
 
+  #assistant-entry {
+    position: fixed;
+    z-index: 35;
+    top: 11rem;
+    left: 1.25rem;
+    width: calc(var(--sidebar-width) - 2.5rem);
+    justify-content: flex-start;
+  }
+
   #sidebar-content {
-    top: 6.5rem !important;
+    top: 10rem !important;
     bottom: 7.75rem !important;
+  }
+
+  #content-area [data-assistant-bar] {
+    display: none;
   }
 
   #navbar a[href="mailto:support@revor.ai"],

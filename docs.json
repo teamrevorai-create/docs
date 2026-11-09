@@ -39,6 +39,19 @@
       },
       {
         "language": "cn",
+        "navbar": {
+          "links": [
+            {
+              "href": "mailto:support@revor.ai",
+              "label": "联系支持"
+            }
+          ],
+          "primary": {
+            "type": "button",
+            "label": "使用 Revor AI",
+            "href": "https://revor.ai/console"
+          }
+        },
         "groups": [
           {
             "group": "MCP",

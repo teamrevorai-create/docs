@@ -1,0 +1,100 @@
+/* Keep the documentation controls in the left rail on desktop. */
+@media (min-width: 1024px) {
+  :root {
+    --sidebar-width: 20rem;
+  }
+
+  body::before {
+    content: "";
+    position: fixed;
+    z-index: 10;
+    inset: 0 auto 0 0;
+    width: var(--sidebar-width);
+    background: #faf9fb;
+    border-right: 1px solid #e9e5ed;
+    pointer-events: none;
+  }
+
+  html.dark body::before {
+    background: #17151c;
+    border-color: #302a36;
+  }
+
+  #navbar-transition {
+    display: none;
+  }
+
+  #navbar {
+    background: transparent;
+  }
+
+  #navbar a:has(> .nav-logo) {
+    position: fixed;
+    z-index: 35;
+    top: 1.5rem;
+    left: 1.5rem;
+    max-width: calc(var(--sidebar-width) - 3rem);
+  }
+
+  #navbar a:has(> .nav-logo) .nav-logo {
+    max-width: 100%;
+  }
+
+  #navbar [data-layout-item="search-entry"] {
+    position: fixed;
+    z-index: 35;
+    top: 5rem;
+    left: 1.25rem;
+    width: calc(var(--sidebar-width) - 2.5rem);
+  }
+
+  #navbar [data-component-part="localization-select-trigger"] {
+    position: fixed;
+    z-index: 35;
+    top: 8.5rem;
+    left: 1.25rem;
+    max-width: calc(var(--sidebar-width) - 5rem);
+  }
+
+  #navbar [data-component-part="theme-preference-menu-trigger"] {
+    position: fixed;
+    z-index: 35;
+    top: 8.5rem;
+    left: calc(var(--sidebar-width) - 3.75rem);
+  }
+
+  #sidebar-content {
+    top: 6.5rem !important;
+    bottom: 7.75rem !important;
+  }
+
+  #navbar a[href="mailto:support@revor.ai"],
+  #navbar a[href="https://revor.ai/console"] {
+    position: fixed;
+    z-index: 35;
+    left: 1.25rem;
+    width: calc(var(--sidebar-width) - 2.5rem);
+    min-height: 2.5rem;
+    display: flex;
+    align-items: center;
+    padding: 0.625rem 0.75rem;
+    border-radius: 0.5rem;
+  }
+
+  #navbar a[href="mailto:support@revor.ai"] {
+    bottom: 4.25rem;
+  }
+
+  #navbar a[href="https://revor.ai/console"] {
+    bottom: 1rem;
+    justify-content: center;
+    background: #a548ee;
+    color: #fff;
+    font-weight: 600;
+  }
+
+  #navbar a[href="https://revor.ai/console"]:hover {
+    background: #8b2fd6;
+    color: #fff;
+  }
+}

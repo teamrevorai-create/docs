@@ -12,29 +12,31 @@
     "dark": "/images/logo-紫色底.png"
   },
   "navigation": {
-    "pages": [
+    "languages": [
       {
-        "group": "Getting Started",
-        "pages": [
-          "index",
-          "quickstart"
+        "language": "en",
+        "groups": [
+          {
+            "group": "MCP",
+            "pages": [
+              {
+                "group": "Agent Skills",
+                "pages": []
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "language": "cn",
+        "groups": [
+          {
+            "group": "MCP",
+            "pages": []
+          }
         ]
       }
-    ],
-    "global": {
-      "anchors": [
-        {
-          "anchor": "Documentation",
-          "href": "https://mintlify.com/docs",
-          "icon": "book-open-cover"
-        },
-        {
-          "anchor": "Blog",
-          "href": "https://mintlify.com/blog",
-          "icon": "newspaper"
-        }
-      ]
-    }
+    ]
   },
   "logo": {
     "light": "/images/横排组合.png",

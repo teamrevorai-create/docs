@@ -31,4 +31,5 @@
 
   updateFavicon();
   document.addEventListener("mintlify:navigate", updateFavicon);
+  new MutationObserver(updateFavicon).observe(document.head, { childList: true });
 })();

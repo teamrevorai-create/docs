@@ -1,6 +1,69 @@
-/* Keep Mintlify's responsive header and sidebar layout; center desktop tabs. */
+/* Place the section switcher in the same row as the brand and actions. */
 @media (min-width: 1024px) {
-  .nav-tabs {
-    margin-inline: auto;
+  :root {
+    --topbar-tabs-height: 0rem !important;
+  }
+
+  #navbar .nav-tabs {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    height: 4rem;
+    margin: 0;
+    gap: 0.25rem;
+    align-items: center;
+    white-space: nowrap;
+    z-index: 21;
+  }
+
+  #navbar div:has(> .nav-tabs) {
+    height: 0;
+    padding: 0;
+  }
+
+  #navbar .nav-tabs-item {
+    height: 2.25rem;
+    padding-inline: 1rem;
+    border-radius: 9999px;
+  }
+
+  #navbar .nav-tabs-item[data-active="true"] {
+    background: rgb(0 0 0 / 0.045);
+  }
+
+  #navbar .nav-tabs-item > div {
+    display: none;
+  }
+
+  #navbar div:has(> #search-bar-entry) {
+    flex: none;
+    margin-left: auto;
+  }
+
+  #navbar div:has(> nav[aria-label="Main"]) {
+    flex: none;
+    margin-left: 0;
+  }
+
+  #search-bar-entry,
+  #assistant-entry {
+    width: 2.25rem;
+    height: 2.25rem;
+    padding: 0;
+    justify-content: center;
+    border-radius: 9999px;
+  }
+
+  #search-bar-entry [data-search-item="trigger-label"],
+  #search-bar-entry [data-search-item="trigger-hint"],
+  #assistant-entry > span {
+    display: none;
+  }
+}
+
+@media (min-width: 1024px) and (max-width: 1199px) {
+  #navbar nav[aria-label="Main"] .navbar-link {
+    display: none;
   }
 }

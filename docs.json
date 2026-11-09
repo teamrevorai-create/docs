@@ -71,5 +71,34 @@
       "canonical": "https://revor.ai/docs/mcp"
     }
   },
-  "description": "Connect REVOR AI through MCP and use Agent Skills for prospect discovery, company research, contacts, trade data, and authorized outreach."
+  "description": "Connect REVOR AI through MCP and use Agent Skills for prospect discovery, company research, contacts, trade data, and authorized outreach.",
+  "navbar": {
+    "links": [
+      {
+        "href": "mailto:support@revor.ai",
+        "label": "Contact Support"
+      }
+    ],
+    "primary": {
+      "type": "button",
+      "label": "Try Revor AI",
+      "href": "https://revor.ai/console"
+    }
+  },
+  "footer": {
+    "socials": {
+      "x": "https://x.com/revor_ai",
+      "linkedin": "https://linkedin.com/company/revor-ai"
+    }
+  },
+  "contextual": {
+    "options": [
+      "copy",
+      "view",
+      "chatgpt",
+      "claude",
+      "mcp"
+    ],
+    "display": "header"
+  }
 }

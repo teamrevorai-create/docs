@@ -1,0 +1,30 @@
+---
+title: "Discover companies with an Agent Skill"
+description: "Find and rank companies matching a natural-language target profile with the Revor Company Discovery Skill."
+sidebarTitle: "Company discovery"
+keywords:
+  - "REVOR AI"
+  - "Agent Skills"
+  - "MCP"
+---
+
+The Revor Company Discovery Skill turns a natural-language target profile into a ranked company list. Use it to find prospects, suppliers, buyers, manufacturers, or distributors by geography, industry, product, and business model.
+
+## Install in Codex
+
+Run this in the project where you want to use the Skill:
+
+```bash
+npx skills add laiye-revor/revor-skills --skill revor-company-discovery --agent codex
+```
+
+Confirm that `/skills` lists it, then invoke `$revor-company-discovery` or describe a company discovery task. The complete Skill folder must stay together, including its scripts.
+
+## Example requests
+
+- Find 25 industrial automation distributors in Southeast Asia.
+- Find European manufacturers that sell private-label pet supplements.
+
+## How it works
+
+The Skill creates one prospect list, follows criteria generation and verification, pages through qualified results, and returns a ranked list with evidence-based fit explanations. Its default search size is 25 companies; larger sizes depend on the Revor plan. When Revor MCP is connected, the Skill uses MCP tools. Otherwise it uses its bundled client with a Revor API key. It discovers companies only; use the Contact Search Skill for people and the Outreach Skill for messaging.

@@ -1,0 +1,38 @@
+---
+title: "连接到 REVOR AI MCP 客户端"
+description: "使用浏览器授权或私密保存的 API Key，将 REVOR AI 远程 MCP 服务接入兼容客户端，并验证账户与权限。"
+sidebarTitle: "连接客户端"
+keywords:
+  - "REVOR AI"
+  - "MCP 客户端"
+  - "OAuth"
+  - "API Key"
+---
+
+将 REVOR AI 连接到支持远程 HTTP MCP 的 AI 客户端。服务器地址为 `https://revor.ai/api/mcp`，不需要本地服务器或启动命令。
+
+## 浏览器授权
+
+<Steps>
+  <Step title="添加远程服务">
+    在客户端添加名为 `REVOR AI` 的远程 MCP 服务，填写上述地址，并将自定义 Headers 留空。
+  </Step>
+  <Step title="在浏览器中授权">
+    发起连接，在 `revor.ai` 登录。核对应用名称、账户和请求的权限后，点击“允许访问”。
+  </Step>
+  <Step title="验证账户">
+    返回客户端，必要时重新加载工具，然后调用 `revor_whoami`。
+  </Step>
+</Steps>
+
+豆包工作中选择 `HTTP`，填写服务器地址，自定义 Headers 留空，再在浏览器中授权。此流程不需要 API Key、Client ID 或 Client Secret。
+
+## API Key 方式
+
+如果选择 API Key，请在 [REVOR AI API Keys 页面](https://revor.ai/my-api-keys)创建或选择 Key，并将其保存在客户端的私密 `x-api-key` Header 或 Secret 中。单用户设备上的本机私有配置也可使用，但应限制文件访问，并避开共享目录、云同步和代码仓库。
+
+显式配置的 API Key 优先于 OAuth。如果 Key 无效，需要修正或移除，客户端不会自动改用 OAuth。
+
+## 检查连接
+
+让客户端调用 `revor_whoami` 并列出可用的 REVOR AI 工具。工具列表取决于授权权限；名称可查阅 [MCP 工具说明](/cn/tools)。

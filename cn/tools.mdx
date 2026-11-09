@@ -1,0 +1,42 @@
+---
+title: "REVOR AI MCP 工具说明"
+description: "查看用于账户检查、潜客发现、公开信息研究、联系人搜索、海关贸易、异步任务和授权触达的 REVOR AI MCP 工具。"
+sidebarTitle: "工具说明"
+keywords:
+  - "REVOR AI"
+  - "MCP 工具"
+  - "工具说明"
+---
+
+REVOR AI MCP 按业务能力发布工具。客户端能看到的工具取决于连接时授予的权限。
+
+| 工具 | 用途 |
+| --- | --- |
+| `revor_whoami` | 检查当前账户和授权权限。 |
+| `revor_get_credits` | 查看可用积分。 |
+| `revor_list_connect_accounts` | 查看已连接的 Email、LinkedIn 或 WhatsApp 账号。 |
+| `revor_research_public_web` | 从公开信息研究企业、市场和近期动态。 |
+| `revor_find_contacts` | 按已验证的企业域名和职位寻找联系人。 |
+| `revor_create_prospect_list` | 创建企业或人物潜客名单。 |
+| `revor_expand_prospect_list` | 在已有名单中寻找更多潜客。 |
+| `revor_list_prospect_lists` | 分页查看潜客名单。 |
+| `revor_get_prospect_list` | 查询名单状态、进度和条件。 |
+| `revor_get_prospect_search_plan` | 查看搜索条件与策略。 |
+| `revor_list_prospects` | 分页查看排序后的潜客结果。 |
+| `revor_customs_company_candidates` | 确认可用于海关查询的企业名称。 |
+| `revor_customs_discover_companies` | 发现进口商或出口商。 |
+| `revor_customs_full_report` | 创建海关贸易综合报告。 |
+| `revor_customs_counterparties` | 查询主要贸易伙伴。 |
+| `revor_customs_categories` | 查询商品或 HS Code 类别。 |
+| `revor_customs_trend` | 查询贸易趋势。 |
+| `revor_customs_countries` | 查询来源国或目的国分布。 |
+| `revor_get_job` | 查询任务状态、结果和计费信息。 |
+| `revor_cancel_job` | 在任务执行前取消排队中的任务。 |
+| `revor_send_outreach` | 通过已授权账号发送 Email、LinkedIn 或 WhatsApp 消息。 |
+| `revor_like_linkedin_post` | 查找并点赞相关 LinkedIn 帖子。 |
+
+## 异步结果与费用
+
+部分操作会先返回任务或资源 ID。任务为 `queued` 或 `running` 时，使用 `revor_get_job` 持续查询，直到状态变为 `succeeded` 或 `failed`。读取已有任务不会重复收取原操作费用。
+
+触达前应先用 `revor_list_connect_accounts` 确认可发送账号，并向用户确认收件人、渠道和内容。计费工具受 REVOR AI 的套餐、余额和使用限制约束；`revor_whoami` 与 `revor_get_credits` 免费。

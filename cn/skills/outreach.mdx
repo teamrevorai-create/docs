@@ -1,0 +1,27 @@
+---
+title: "使用 Agent Skill 准备智能触达"
+description: "通过已连接的 Revor 账号起草并在确认后执行 Email、LinkedIn 或 WhatsApp 触达。"
+sidebarTitle: "智能触达"
+keywords:
+  - "REVOR AI"
+  - "Agent Skills"
+  - "MCP"
+---
+
+Revor Outreach Skill 帮助 AI 客户端准备 Email、LinkedIn 或 WhatsApp 文案，并通过 Revor AI 执行已授权的触达。它会检查可用发送账号，并在任务完成后返回结果。
+
+## 在 Codex 中安装
+
+在要使用该 Skill 的项目目录中运行：
+
+```bash
+npx skills add laiye-revor/revor-skills --skill revor-outreach --agent codex
+```
+
+使用 `/skills` 确认安装，然后调用 `$revor-outreach`，或描述触达任务。请保留包含参考文件的完整 Skill 目录。
+
+## 发送前准备
+
+- 在 [Revor Connect](https://revor.ai/console/connect) 关联可发送账号。
+- 提供或要求查找目标信息：LinkedIn 个人主页 URL、邮箱地址，或 WhatsApp 号码或联系人标识。
+- 在发送前核对收件人、渠道和文案。 Skill 默认先起草，只有用户明确确认后才发送。如果有多个发送账号，用户应选择一个。创建任务后，客户端查询最终状态并返回结果。不得编造联系人信息，也不得用于骚扰、冒充或欺诈。

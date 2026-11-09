@@ -1,0 +1,30 @@
+---
+title: "Find company contacts with an Agent Skill"
+description: "Find role-focused business contacts at a company using its verified official employee domain."
+sidebarTitle: "Contact search"
+keywords:
+  - "REVOR AI"
+  - "Agent Skills"
+  - "MCP"
+---
+
+The Revor Contact Search Skill finds relevant people at one company by its verified official employee domain. It can return available work emails and LinkedIn profiles for functions such as procurement, supply chain, sales, or finance.
+
+## Install in Codex
+
+Run this in the project where you want to use the Skill:
+
+```bash
+npx skills add laiye-revor/revor-skills --skill revor-contact-search --agent codex
+```
+
+Check `/skills` and invoke `$revor-contact-search`, or ask for contacts at a specific company. Keep the complete Skill folder, including its scripts.
+
+## Required input
+
+Provide the official employee domain, such as `example.com`. A company name, LinkedIn URL, marketplace page, or email address is not a substitute for a verified domain.
+
+## Example requests
+
+- Find procurement and supply-chain leaders at example.com.
+- Find the founder and finance decision-makers at this company. The Skill normally runs one search per company and returns concise results. It labels inferred seniority or hierarchy and never treats an email as verified unless the API reports that status. It does not draft or send messages.

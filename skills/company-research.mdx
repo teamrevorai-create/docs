@@ -1,0 +1,21 @@
+---
+title: "Research a company with an Agent Skill"
+description: "Build a sourced company background report with public evidence, verified trade matches, and relevant contacts."
+sidebarTitle: "Company research"
+keywords: ["REVOR AI", "Agent Skills", "MCP"]
+---
+
+The Revor Company Research Skill prepares a sourced company background report. It confirms public company identity, adds customs trade evidence when the entity match is reliable, and finds relevant contacts from a verified domain.
+## Install in Codex
+Run this in the project where you want to use the Skill:
+```bash
+npx skills add laiye-revor/revor-skills --skill revor-company-research --agent codex
+```
+Check `/skills` and invoke `$revor-company-research`, or describe a matching research task. Keep the complete Skill folder, including its scripts.
+## When to use it
+- Prepare for a meeting or company background check.
+- Assess a supplier, buyer, or customer.
+- Review trade activity and relevant decision-maker contacts.
+## Research flow
+The Skill identifies the official company and domain, selects the appropriate customs role and catalog, verifies a candidate before a paid report, and searches contacts once using the verified employee domain. Important claims retain source links, dates, and scope.
+It uses Revor MCP tools when connected. Without MCP, its bundled client requires a Revor API key. The Skill does not perform outreach without a separate request.

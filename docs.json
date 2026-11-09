@@ -34,7 +34,8 @@
               }
             ]
           }
-        ]
+        ],
+        "default": true
       },
       {
         "language": "cn",
@@ -42,6 +43,10 @@
           {
             "group": "MCP",
             "pages": [
+              "cn/index",
+              "cn/install",
+              "cn/connect",
+              "cn/tools",
               {
                 "group": "Agent Skills",
                 "pages": [
@@ -50,11 +55,7 @@
                   "cn/skills/contact-search",
                   "cn/skills/outreach"
                 ]
-              },
-              "cn/index",
-              "cn/install",
-              "cn/connect",
-              "cn/tools"
+              }
             ]
           }
         ]

@@ -1,0 +1,6 @@
+/* Keep Mintlify's responsive header and sidebar layout; center desktop tabs. */
+@media (min-width: 1024px) {
+  .nav-tabs {
+    margin-inline: auto;
+  }
+}

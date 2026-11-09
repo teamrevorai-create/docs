@@ -12,11 +12,39 @@
     "dark": "/images/logo-紫色底.png"
   },
   "navigation": {
-    "pages": [
-      "index",
-      "install",
-      "connect",
-      "tools"
+    "languages": [
+      {
+        "language": "en",
+        "groups": [
+          {
+            "group": "MCP",
+            "pages": [
+              "index",
+              "install",
+              "connect",
+              "tools",
+              {
+                "group": "Agent Skills",
+                "pages": []
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "language": "cn",
+        "groups": [
+          {
+            "group": "MCP",
+            "pages": [
+              {
+                "group": "Agent Skills",
+                "pages": []
+              }
+            ]
+          }
+        ]
+      }
     ]
   },
   "logo": {

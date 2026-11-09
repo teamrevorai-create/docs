@@ -44,7 +44,12 @@
             "pages": [
               {
                 "group": "Agent Skills",
-                "pages": []
+                "pages": [
+                  "cn/skills/company-discovery",
+                  "cn/skills/company-research",
+                  "cn/skills/contact-search",
+                  "cn/skills/outreach"
+                ]
               },
               "cn/index",
               "cn/install",

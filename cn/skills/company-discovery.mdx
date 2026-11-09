@@ -1,0 +1,20 @@
+---
+title: "使用 Agent Skill 搜索企业"
+description: "根据自然语言目标画像，使用 Revor Company Discovery Skill 筛选并排序符合条件的企业。"
+sidebarTitle: "企业搜索"
+keywords: ["REVOR AI", "Agent Skills", "MCP"]
+---
+
+Revor Company Discovery Skill 将自然语言目标画像转换为经过筛选和排序的企业名单。你可以按地区、行业、产品、商业模式等条件寻找潜在客户、供应商、买家、制造商或分销商。
+## 在 Codex 中安装
+在要使用该 Skill 的项目目录中运行：
+```bash
+npx skills add laiye-revor/revor-skills --skill revor-company-discovery --agent codex
+```
+使用 `/skills` 确认安装，然后调用 `$revor-company-discovery`，或直接描述企业搜索任务。请保留包含脚本的完整 Skill 目录。
+## 示例请求
+- 寻找东南亚的 25 家工业自动化分销商。
+- 寻找销售自有品牌宠物营养品的欧洲制造商。
+## 工作方式
+Skill 创建一份潜客名单，跟进条件生成、搜索与验证，分页读取合格结果，并返回带有匹配依据的排序名单。默认搜索规模为 25 家企业；更大规模取决于当前 Revor 套餐。
+连接 Revor MCP 时，Skill 会直接使用 MCP 工具；否则使用内置客户端并需要 Revor API Key。该 Skill 只搜索企业，不负责联系人搜索或发送消息。

@@ -1,0 +1,21 @@
+---
+title: "使用 Agent Skill 进行企业背调"
+description: "结合公开信息、经过核实的海关匹配和相关联系人，生成带来源依据的企业背景报告。"
+sidebarTitle: "企业背调"
+keywords: ["REVOR AI", "Agent Skills", "MCP"]
+---
+
+Revor Company Research Skill 生成有来源依据的企业背景报告。它先确认企业公开身份，再在实体匹配可靠时补充海关贸易证据，并通过已验证的域名查找相关联系人。
+## 在 Codex 中安装
+在要使用该 Skill 的项目目录中运行：
+```bash
+npx skills add laiye-revor/revor-skills --skill revor-company-research --agent codex
+```
+使用 `/skills` 确认安装，然后调用 `$revor-company-research`，或描述相应的研究任务。请保留包含脚本的完整 Skill 目录。
+## 适用场景
+- 会议前的企业背景调查。
+- 供应商、买家或客户的尽调。
+- 贸易活动与相关决策者评估。
+## 研究流程
+Skill 先确认企业官网和身份，再选择合适的海关角色与数据目录；运行付费报告前核实候选企业，并使用已验证的员工域名搜索联系人。重要结论保留来源链接、日期和适用范围。
+连接 Revor MCP 时使用 MCP 工具；否则内置客户端需要 Revor API Key。未经单独请求，该 Skill 不执行触达。

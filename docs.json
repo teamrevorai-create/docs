@@ -25,7 +25,12 @@
               "tools",
               {
                 "group": "Agent Skills",
-                "pages": []
+                "pages": [
+                  "skills/company-discovery",
+                  "skills/company-research",
+                  "skills/contact-search",
+                  "skills/outreach"
+                ]
               }
             ]
           }

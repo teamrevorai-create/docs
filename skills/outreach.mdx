@@ -1,0 +1,19 @@
+---
+title: "Prepare outreach with an Agent Skill"
+description: "Draft and carry out confirmed Email, LinkedIn, or WhatsApp outreach through a connected Revor account."
+sidebarTitle: "Outreach"
+keywords: ["REVOR AI", "Agent Skills", "MCP"]
+---
+
+The Revor Outreach Skill helps an AI client prepare Email, LinkedIn, or WhatsApp messages and carry out authorized outreach through Revor AI. It checks available connected sending accounts and returns the task result after execution.
+## Install in Codex
+Run this in the project where you want to use the Skill:
+```bash
+npx skills add laiye-revor/revor-skills --skill revor-outreach --agent codex
+```
+Check `/skills` and invoke `$revor-outreach`, or describe a matching outreach task. Keep the complete Skill folder, including its reference files.
+## Before sending
+- Connect a send-capable account in [Revor Connect](https://revor.ai/console/connect).
+- Supply or request the recipient details: a LinkedIn profile URL, email address, or WhatsApp number or contact identifier.
+- Review the recipient, channel, and message before confirming the send.
+The Skill drafts first and sends only after explicit user confirmation. When several sending accounts are available, the user selects one. After creating a task, the client checks its status and reports the final result. It must not invent contact details or use outreach for harassment, impersonation, or fraud.

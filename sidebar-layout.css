@@ -1,7 +1,7 @@
 /* Keep the documentation controls in the left rail on desktop. */
 @media (min-width: 1024px) {
   :root {
-    --sidebar-width: 20rem;
+    --sidebar-width: 17rem;
   }
 
   body::before {
@@ -31,9 +31,9 @@
   #navbar a:has(> .nav-logo) {
     position: fixed;
     z-index: 35;
-    top: 1.5rem;
-    left: 1.5rem;
-    max-width: calc(var(--sidebar-width) - 3rem);
+    top: 1.25rem;
+    left: 1rem;
+    max-width: calc(var(--sidebar-width) - 9rem);
   }
 
   #navbar a:has(> .nav-logo) .nav-logo {
@@ -43,38 +43,47 @@
   #navbar [data-layout-item="search-entry"] {
     position: fixed;
     z-index: 35;
-    top: 5rem;
-    left: 1.25rem;
-    width: calc(var(--sidebar-width) - 2.5rem);
+    top: 4rem;
+    left: 1rem;
+    width: calc(var(--sidebar-width) - 4.75rem);
   }
 
   #navbar [data-component-part="localization-select-trigger"] {
     position: fixed;
     z-index: 35;
-    top: 8.5rem;
-    left: 1.25rem;
-    max-width: calc(var(--sidebar-width) - 5rem);
+    top: 1.125rem;
+    left: calc(var(--sidebar-width) - 8rem);
+    max-width: 5.5rem;
   }
 
   #navbar [data-component-part="theme-preference-menu-trigger"] {
     position: fixed;
     z-index: 35;
-    top: 8.5rem;
-    left: calc(var(--sidebar-width) - 3.75rem);
+    top: 1.125rem;
+    left: calc(var(--sidebar-width) - 2.75rem);
   }
 
   #assistant-entry {
     position: fixed;
     z-index: 35;
-    top: 11rem;
-    left: 1.25rem;
-    width: calc(var(--sidebar-width) - 2.5rem);
+    top: 4rem;
+    left: calc(var(--sidebar-width) - 3.25rem);
+    width: 2.25rem;
+    height: 2.25rem;
+    padding: 0 0 0 0.55rem;
+    overflow: hidden;
+    font-size: 0;
+    white-space: nowrap;
     justify-content: flex-start;
   }
 
   #sidebar-content {
-    top: 10rem !important;
+    top: 4.25rem !important;
     bottom: 7.75rem !important;
+  }
+
+  #content-container > div:first-child {
+    padding-top: 0 !important;
   }
 
   #content-area [data-assistant-bar] {
@@ -85,8 +94,8 @@
   #navbar a[href="https://revor.ai/console"] {
     position: fixed;
     z-index: 35;
-    left: 1.25rem;
-    width: calc(var(--sidebar-width) - 2.5rem);
+    left: 1rem;
+    width: calc(var(--sidebar-width) - 2rem);
     min-height: 2.5rem;
     display: flex;
     align-items: center;
@@ -96,6 +105,25 @@
 
   #navbar a[href="mailto:support@revor.ai"] {
     bottom: 4.25rem;
+    border: 1px solid #d8c3e7;
+    background: #fff;
+    color: #72309e;
+    font-weight: 600;
+  }
+
+  #navbar a[href="mailto:support@revor.ai"]:hover {
+    background: #f5eafc;
+    border-color: #b979dc;
+  }
+
+  html.dark #navbar a[href="mailto:support@revor.ai"] {
+    background: #211b29;
+    border-color: #80539b;
+    color: #e3baf9;
+  }
+
+  html.dark #navbar a[href="mailto:support@revor.ai"]:hover {
+    background: #34243f;
   }
 
   #navbar a[href="https://revor.ai/console"] {

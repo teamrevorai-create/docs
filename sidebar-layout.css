@@ -90,8 +90,13 @@
     bottom: 7.75rem !important;
   }
 
+  #navigation-items {
+    width: calc(var(--sidebar-width) - 2rem);
+  }
+
   #content-container > div:first-child {
     padding-top: 0 !important;
+    margin-top: -5rem;
   }
 
   #content-area [data-assistant-bar] {
@@ -119,6 +124,13 @@
     font-weight: 600;
   }
 
+  #navbar a[href="mailto:support@revor.ai"]::after {
+    content: "↗";
+    margin-left: auto;
+    font-size: 1rem;
+    line-height: 1;
+  }
+
   #navbar a[href="mailto:support@revor.ai"]:hover {
     background: #f5eafc;
     border-color: #b979dc;
@@ -136,10 +148,27 @@
 
   #navbar a[href="https://revor.ai/console"] {
     bottom: 1rem;
-    justify-content: center;
+    justify-content: flex-start;
     background: #a548ee;
     color: #fff;
     font-weight: 600;
+  }
+
+  #navbar a[href="https://revor.ai/console"] > div {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  #navbar a[href="https://revor.ai/console"] > div svg {
+    display: none;
+  }
+
+  #navbar a[href="https://revor.ai/console"] > div::after {
+    content: "↗";
+    margin-left: auto;
+    color: #fff;
+    font-size: 1rem;
+    line-height: 1;
   }
 
   #navbar a[href="https://revor.ai/console"]:hover {

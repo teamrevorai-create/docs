@@ -32,7 +32,12 @@
         "groups": [
           {
             "group": "MCP",
-            "pages": []
+            "pages": [
+              {
+                "group": "Agent Skills",
+                "pages": []
+              }
+            ]
           }
         ]
       }

@@ -1,0 +1,34 @@
+---
+title: "Install REVOR AI MCP with an AI assistant"
+description: "Give an AI assistant the correct remote MCP address, authentication choices, and verification steps for a secure REVOR AI connection."
+sidebarTitle: "AI installation"
+keywords: ["REVOR AI", "MCP installation", "AI assistant"]
+---
+
+An AI assistant can add REVOR AI MCP to a client that supports remote MCP. Give it the server URL and let it use browser authorization or a private API key field supported by the client.
+
+| Setting | Value |
+| --- | --- |
+| Name | `REVOR AI` |
+| Type | Remote MCP / Streamable HTTP |
+| Server URL | `https://revor.ai/api/mcp` |
+| Browser authorization | Leave custom headers empty and authorize on `revor.ai` |
+| API key authentication | Store the key privately in an `x-api-key` header |
+| Local launch command | None |
+
+## Instructions to give your assistant
+
+```text
+Install REVOR AI as a remote MCP service at https://revor.ai/api/mcp.
+Use the client built-in remote MCP or connector feature. Do not run a local
+server or install an MCP package. If the client supports browser OAuth,
+leave headers empty and let me authorize on revor.ai. If I choose API key
+authentication, direct me to https://revor.ai/my-api-keys and let me enter
+the key in a private Secret or local client field. Do not ask for the key
+in chat or print it. Preserve my existing MCP servers. After connecting,
+call revor_whoami and list the REVOR AI tools without running a billable query.
+```
+
+## Verify the installation
+
+The connection is ready when the client shows REVOR AI tools and `revor_whoami` succeeds for the intended account. If authorization fails, review the steps in [Connect an MCP client](/connect).

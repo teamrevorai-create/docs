@@ -1,0 +1,45 @@
+---
+title: "REVOR AI MCP"
+description: "Connect REVOR AI to an MCP-compatible AI client to discover prospects, research companies, find contacts, inspect trade data, and use authorized outreach."
+keywords:
+  - "REVOR AI"
+  - "MCP"
+  - "Model Context Protocol"
+---
+
+REVOR AI MCP lets an AI client use REVOR AI tools for prospect discovery, company research, business contacts, customs trade data, and authorized outreach. It is a remote MCP service, so you do not need to install or run a local server.
+
+## Server URL
+
+```text
+https://revor.ai/api/mcp
+```
+
+Connect through browser authorization when your client supports remote MCP OAuth. Clients using an API key can send it in a private `x-api-key` header. Never put an API key in chat, source control, or a shared configuration.
+
+## Get started
+
+<Columns cols={2}>
+  <Card title="Connect a client" icon="plug" href="/connect">
+    Add the remote MCP server and verify your connection with `revor_whoami`.
+  </Card>
+
+  <Card title="Install with an AI assistant" icon="bot" href="/install">
+    Give your assistant the supported connection details and safety requirements.
+  </Card>
+
+  <Card title="Explore MCP tools" icon="list" href="/tools">
+    See the available tools and the work each one performs.
+  </Card>
+</Columns>
+
+## What you can do
+
+- Create and inspect company or person prospect lists.
+- Research companies and markets from public information.
+- Find business contacts by verified company domain and role.
+- Discover importers and exporters or analyze customs trade activity.
+- Check account credits, connected outreach accounts, and asynchronous job results.
+- Send outreach only through an authorized connected account and with user confirmation.
+
+The tools available to you depend on the permissions granted to the connection. See the [MCP tool reference](/tools) for the published tool names.

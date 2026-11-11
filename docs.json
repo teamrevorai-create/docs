@@ -20,7 +20,8 @@
               {
                 "anchor": "Getting Started",
                 "pages": [
-                  "guides"
+                  "guides",
+                  "quick-start"
                 ]
               },
               {

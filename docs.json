@@ -122,6 +122,11 @@
       "source": "/mcp/cn",
       "destination": "/mcp/cn/overview",
       "permanent": true
+    },
+    {
+      "source": "/mcp",
+      "destination": "/mcp/overview",
+      "permanent": true
     }
   ]
 }

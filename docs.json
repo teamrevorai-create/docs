@@ -16,9 +16,19 @@
         "tabs": [
           {
             "tab": "Guides",
-            "pages": [
-              "guides",
-              "guides/brand-assets"
+            "anchors": [
+              {
+                "anchor": "Getting Started",
+                "pages": [
+                  "guides"
+                ]
+              },
+              {
+                "anchor": "Resources",
+                "pages": [
+                  "guides/brand-assets"
+                ]
+              }
             ]
           },
           {

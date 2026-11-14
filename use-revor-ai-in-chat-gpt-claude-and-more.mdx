@@ -1,0 +1,72 @@
+---
+title: "Use Revor AI in ChatGPT, Claude, and more..."
+icon:
+  style: "regular"
+  name: "sparkles"
+  library: "fontawesome"
+description: "Connect Revor AI to ChatGPT, Claude, or another AI client, then find prospects, research companies, and reach out right from the chat."
+sidebarTitle: "Use in your AI"
+---
+
+## Before you start
+
+- **A Revor AI account**<br /> [https://revor.ai/auth/signin](https://revor.ai/auth/signin)
+- **An AI client that supports plugins or remote MCP**<br />For example, ChatGPT, Codex, or Claude.
+- **Credits on your account**<br />Make sure you have credits available.
+
+## Connect Revor AI
+
+<Tabs>
+  <Tab title="Official Plugin">
+    Revor AI is available as an official plugin in ChatGPT and Codex, so you can add it without entering a server URL.
+
+    <Steps>
+      <Step title="Find and add the plugin">
+        In ChatGPT, open the plugin directory and search for **Revor AI**. Select the plugin, then click **Install**.
+      </Step>
+      <Step title="Authorize on [revor.ai](http://revor.ai)">
+        Sign up or sign in on revor.ai, check the account and requested permissions, then click **Allow access**.
+      </Step>
+      <Step title="Verify the connection">
+        Ask ChatGPT or Codex to call `revor_whoami`. It confirms which Revor account is connected.
+      </Step>
+    </Steps>
+  </Tab>
+  <Tab title="Custom Connector">
+    In other AI clients that support remote MCP, such as Claude, add Revor AI as a custom connector.
+
+    <Steps>
+      <Step title="Ask your AI client to install Revor AI">
+        Send this message to your AI client:
+
+        `Install Revor AI MCP by following https://revor.ai/docs/mcp/install`
+
+        Your AI client reads the installation guide and sets up Revor AI for you.
+      </Step>
+      <Step title="Authorize on [revor.ai](http://revor.ai)">
+        In your AI client, find the custom connector you just added and click to authorize it. Depending on what your client supports, you'll either:
+
+        - Authorize in the browser<br />you're taken to revor.ai. Sign up or sign in, check the account and requested permissions, then click **Allow access**.
+        - Enter an API key<br />create one at [Revor AI API Keys](https://revor.ai/my-api-keys), then enter it in the field your client provides.
+      </Step>
+      <Step title="Verify the connection">
+        Ask the AI client to call `revor_whoami`. It confirms which Revor account is connected.
+      </Step>
+    </Steps>
+  </Tab>
+</Tabs>
+
+## Try it out
+
+Ask your AI client in plain language, for example:
+
+- Find 10 pet supply retail chains in the US, prioritizing companies that have recently posted job openings for purchasing or buyer roles.
+- Can you research Petco for me? What opportunities are there, and how should we approach them?
+- Find the purchasing managers at [herweck.de](http://herweck.de).
+- Draft a personalized outreach message for each key contact you just found.
+
+Revor sends outreach only through your authorized connected accounts and with your confirmation.
+
+<Check>
+  You can now use Revor AI right inside your AI client to find prospects, research companies, and reach out, without leaving the chat.
+</Check>

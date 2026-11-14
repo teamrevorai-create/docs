@@ -11,7 +11,25 @@ keywords:
 
 Connect REVOR AI to an AI client that supports remote MCP over HTTP. The server URL is `https://revor.ai/api/mcp`; no local server or launch command is required.
 
+## ChatGPT and Codex plugin
+
+REVOR AI is available as an official plugin in ChatGPT and Codex, so you don't need to add the server URL manually.
+
+<Steps>
+  <Step title="Open the plugin">
+    Go to the [REVOR AI plugin](https://chatgpt.com/plugins/plugin_asdk_app_6ad84582d50881918036d7867769b6f5) and add it to your ChatGPT or Codex account.
+  </Step>
+  <Step title="Authorize on revor.ai">
+    Sign in on `revor.ai` and check the account and requested permissions before selecting Allow access.
+  </Step>
+  <Step title="Verify the account">
+    Ask ChatGPT or Codex to call `revor_whoami` to confirm the connected account.
+  </Step>
+</Steps>
+
 ## Browser authorization
+
+For other clients that support remote MCP, add the server manually.
 
 <Steps>
   <Step title="Add the remote server">

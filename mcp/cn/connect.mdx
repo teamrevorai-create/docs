@@ -11,7 +11,25 @@ keywords:
 
 将 REVOR AI 连接到支持远程 HTTP MCP 的 AI 客户端。服务器地址为 `https://revor.ai/api/mcp`，不需要本地服务器或启动命令。
 
+## ChatGPT 和 Codex 插件
+
+REVOR AI 已作为官方插件上线 ChatGPT 和 Codex，无需手动填写服务器地址。
+
+<Steps>
+  <Step title="打开插件">
+    访问 [REVOR AI 插件页面](https://chatgpt.com/plugins/plugin_asdk_app_6ad84582d50881918036d7867769b6f5)，将其添加到你的 ChatGPT 或 Codex 账户。
+  </Step>
+  <Step title="在 revor.ai 授权">
+    在 `revor.ai` 登录，核对账户和请求的权限后，点击“允许访问”。
+  </Step>
+  <Step title="验证账户">
+    让 ChatGPT 或 Codex 调用 `revor_whoami`，确认已连接的账户。
+  </Step>
+</Steps>
+
 ## 浏览器授权
+
+其他支持远程 MCP 的客户端，请手动添加服务。
 
 <Steps>
   <Step title="添加远程服务">

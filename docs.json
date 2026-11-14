@@ -16,8 +16,23 @@
         "tabs": [
           {
             "tab": "Guides",
-            "pages": [
-              "guides"
+            "anchors": [
+              {
+                "anchor": "Getting started",
+                "pages": [
+                  "guides",
+                  {
+                    "group": "Quick start",
+                    "pages": [
+                      "build-your-first-prospect-list",
+                      "launch-your-first-outbound-campaign",
+                      "start-handling-customer-inquiries-with-revor",
+                      "use-revor-ai-in-chat-gpt-claude-and-more"
+                    ]
+                  },
+                  "security"
+                ]
+              }
             ]
           },
           {
@@ -58,8 +73,23 @@
         "tabs": [
           {
             "tab": "指南",
-            "pages": [
-              "guides/cn"
+            "anchors": [
+              {
+                "anchor": "开始使用",
+                "pages": [
+                  "guides/cn",
+                  {
+                    "group": "快速开始",
+                    "pages": [
+                      "cn/build-your-first-prospect-list",
+                      "cn/launch-your-first-outbound-campaign",
+                      "cn/zhi-neng",
+                      "cn/use-revor-ai-in-chat-gpt-claude-and-more"
+                    ]
+                  },
+                  "cn/security"
+                ]
+              }
             ]
           },
           {

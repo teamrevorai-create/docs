@@ -1,0 +1,72 @@
+---
+title: "在 ChatGPT、Claude 等 AI 中使用 Revor AI"
+sidebarTitle: "在你的 AI 中使用"
+description: "将 Revor AI 连接到 ChatGPT、Claude 或其他 AI 客户端，直接在对话中查找潜客、研究企业并发起触达。"
+icon:
+  style: "regular"
+  name: "sparkles"
+  library: "fontawesome"
+---
+
+## 开始之前
+
+- **一个 Revor AI 账户**<br /> [https://revor.ai/auth/signin](https://revor.ai/auth/signin)
+- **一个支持插件或远程 MCP 的 AI 客户端**<br />例如 ChatGPT、Codex 或 Claude。
+- **账户中有可用积分**<br />请确认账户中有可用积分。
+
+## 连接 Revor AI
+
+<Tabs>
+  <Tab title="官方插件">
+    Revor AI 已作为官方插件上线 ChatGPT 和 Codex，无需填写服务器地址即可添加。
+
+    <Steps>
+      <Step title="查找并添加插件">
+        在 ChatGPT 中打开插件目录，搜索 **Revor AI**，选择插件后点击 **Install**。
+      </Step>
+      <Step title="在 revor.ai 授权">
+        在 revor.ai 注册或登录，核对账户和请求的权限，然后点击 **Allow access**。
+      </Step>
+      <Step title="验证连接">
+        让 ChatGPT 或 Codex 调用 `revor_whoami`，确认已连接的 Revor 账户。
+      </Step>
+    </Steps>
+  </Tab>
+  <Tab title="自定义连接器">
+    在其他支持远程 MCP 的 AI 客户端（如 Claude）中，将 Revor AI 添加为自定义连接器。
+
+    <Steps>
+      <Step title="让 AI 客户端安装 Revor AI">
+        向你的 AI 客户端发送以下消息：
+
+        `按照 https://revor.ai/docs/mcp/install 安装 Revor AI MCP`
+
+        AI 客户端会读取安装指南并为你完成设置。
+      </Step>
+      <Step title="在 revor.ai 授权">
+        在 AI 客户端中找到刚添加的自定义连接器，点击授权。根据客户端支持的方式，你需要：
+
+        - 在浏览器中授权<br />跳转到 revor.ai 后注册或登录，核对账户和请求的权限，然后点击 **Allow access**。
+        - 输入 API Key<br />在 [Revor AI API Keys](https://revor.ai/my-api-keys) 创建 Key，再填入客户端提供的字段。
+      </Step>
+      <Step title="验证连接">
+        让 AI 客户端调用 `revor_whoami`，确认已连接的 Revor 账户。
+      </Step>
+    </Steps>
+  </Tab>
+</Tabs>
+
+## 试一试
+
+用自然语言向 AI 客户端提问，例如：
+
+- 查找 10 家美国宠物用品零售连锁企业，优先选择最近发布采购或买手岗位招聘的公司。
+- 帮我研究一下 Petco：有哪些机会，我们应该如何切入？
+- 查找 [herweck.de](http://herweck.de) 的采购经理。
+- 为刚找到的每位关键联系人起草一条个性化开发消息。
+
+Revor 只会通过你已授权的连接账号，并在你确认后发送开发消息。
+
+<Check>
+  现在，你可以直接在 AI 客户端中使用 Revor AI 查找潜客、研究企业并发起触达，无需离开对话。
+</Check>

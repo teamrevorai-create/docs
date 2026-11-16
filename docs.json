@@ -32,6 +32,12 @@
                   },
                   "security"
                 ]
+              },
+              {
+                "anchor": "Find prospects",
+                "pages": [
+                  "write-a-search-prompt-that-finds-the-right-companies"
+                ]
               }
             ]
           },

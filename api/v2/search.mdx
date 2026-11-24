@@ -1,0 +1,43 @@
+---
+title: "Company and people search"
+description: "Discover company or person candidates using natural language, with structured profiles, relevant excerpts and source links. For persistent lists, criteria scoring and continued discovery, use prospect lists. For contacts at a known company domain, use contact research."
+keywords: ["Revor AI", "API v2", "Company and people search"]
+sidebarTitle: "Overview"
+---
+
+Discover company or person candidates using natural language, with structured profiles, relevant excerpts and source links. For persistent lists, criteria scoring and continued discovery, use [prospect lists](/api/v2/websets-create). For contacts at a known company domain, use [contact research](/api/v2/research-contacts).
+
+## Endpoints
+
+| Method | Path | Description |
+| --- | --- | --- |
+| `POST` | `/api/v2/search/companies` | Search for company candidates. |
+| `POST` | `/api/v2/search/people` | Search for person candidates. |
+
+<CardGroup cols={2}>
+  <Card title="Search companies" icon="building" href="/api/v2/search-companies">
+    Discover company candidates using natural language.
+  </Card>
+
+  <Card title="Search people" icon="user" href="/api/v2/search-people">
+    Discover person candidates using natural language.
+  </Card>
+</CardGroup>
+
+## Shared concepts
+
+- **Permission:** `search:write` and `search:read` to create; `search:read` to read a job
+- **Rate limit:** Membership `expensive_create` (shared between API and MCP)
+- **Concurrency:** Both searches share the membership research-task concurrency allowance
+- **Idempotency:** Use the `Idempotency-Key` HTTP header, or `idempotency_key` for MCP. Exact retries must keep the same key and parameters.
+- **Polling:** `Prefer: wait=20` waits briefly for completion. Terminal responses use HTTP 200; running jobs use HTTP 202. Read `/api/v2/jobs/{id}` with the returned job ID.
+- **MCP:** `revor_search_companies` and `revor_search_people` use the same parameters plus `idempotency_key`. They may return a terminal job immediately; otherwise follow `next_action` with `revor_get_job`. Do not repeat creation to check progress.
+
+## Credits
+
+| Requested limit | Credits per search |
+| --- | ---: |
+| 1-10 | 3 |
+| 11-25 | 8 |
+
+Company and people search use the same pricing. Successful zero-result searches are charged; failed search execution is not charged. Fewer returned results do not trigger extra searches or per-result repricing. Detail and experience/education expansions do not cost extra. Idempotent retries and job reads do not charge again. Use terminal `billing.charged_credits` as the final charge.

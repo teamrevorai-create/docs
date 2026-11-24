@@ -1,0 +1,90 @@
+---
+title: "读取多轮触达配置"
+description: "读取指定智能体的多轮触达配置与独立版本。"
+api: "GET https://revor.ai/api/v2/agents/{agentId}/sequence"
+authMethod: "bearer"
+playground: "simple"
+keywords:
+  - "Revor AI"
+  - "API v2"
+  - "读取多轮触达配置"
+---
+
+读取指定智能体的多轮触达配置。多轮配置使用独立资源路径，不属于基础 PATCH。
+
+## 接口概览
+
+|  |  |
+| --- | --- |
+| 方法 | `GET` |
+| 路径 | `/api/v2/agents/{agentId}/sequence` |
+| 权限 | `agents:read` |
+| 限流桶 | `read` |
+| 返回 | `item`，含 `enabled`、`version`、`updated_at`、`rounds` |
+
+## 路径参数
+
+<ParamField path="agentId" type="string" required>
+  智能体 UUID。仅限 icebreaker 智能体。
+</ParamField>
+
+```bash cURL
+curl -X GET "https://revor.ai/api/v2/agents/{agentId}/sequence" \
+  -H "Authorization: Bearer sk-revor-REPLACE_ME"
+```
+
+## 响应
+
+```json 200
+{
+  "ok": true,
+  "request_id": "req_xxx",
+  "item": {
+    "enabled": true,
+    "version": 1,
+    "updated_at": "2026-11-13T04:44:50.096+00:00",
+    "rounds": [
+      {
+        "round_no": 2,
+        "wait_days": 3,
+        "strategy_key": "value_add",
+        "content_generation_mode": "ai_personalized",
+        "content_input": "提供新的产品应用案例，询问是否需要样品",
+        "live_research_enabled": false
+      }
+    ]
+  }
+}
+```
+
+### 响应字段说明
+
+<ResponseField name="enabled" type="boolean">
+  多轮触达是否启用。
+</ResponseField>
+
+<ResponseField name="version" type="integer">
+  配置版本号。尚未配置时为 `0`。
+</ResponseField>
+
+<ResponseField name="updated_at" type="string">
+  最近更新时间。
+</ResponseField>
+
+<ResponseField name="rounds" type="array">
+  后续轮次列表，只包含第 2 轮开始的跟进。每轮包含 `round_no`、`wait_days`、`strategy_key`、`content_generation_mode`、`content_input`、`live_research_enabled`（只读）等字段。
+</ResponseField>
+
+## 门禁说明
+
+仅支持 icebreaker 智能体，并沿用网页开放门禁: 管理员或部署已开启 `MB_SMART_OUTREACH_SEQUENCE_UI_ENABLED`；未开放返回 `404` `agent_sequence_unavailable`。
+
+这不开放客服的激活跟进接口。
+
+<Note>
+  内部 hash、模型配置和研究授权版本不会返回。
+</Note>
+
+## MCP 工具
+
+`revor_get_agent_sequence`

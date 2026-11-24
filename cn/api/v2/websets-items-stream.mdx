@@ -1,0 +1,201 @@
+---
+title: "实时订阅潜客结果"
+description: "原入口 GET /api/v2/websets/{webset_id}/items/stream 继续支持，参数、返回字段和权限均保持一致。两个 URL 执行同一操作。"
+keywords: ["Revor AI", "API v2", "实时订阅潜客结果"]
+api: "GET https://revor.ai/api/v2/prospect-lists/{webset_id}/prospects/stream"
+authMethod: "bearer"
+playground: "simple"
+---
+
+通过 Server-Sent Events 接收 Webset 状态、挖掘条件、搜索策略和 Item 增量。需要 `websets:read` 权限；连接不启动搜索，也不扣积分。
+
+<Note>
+  原入口 `GET /api/v2/websets/{webset_id}/items/stream` 继续支持，参数、返回字段和权限均保持一致。两个 URL 执行同一操作。
+</Note>
+
+## 概览
+
+|  |  |
+| --- | --- |
+| 方法 | `GET` |
+| 路径 | `https://revor.ai/api/v2/prospect-lists/\{webset_id\}/prospects/stream` |
+| 权限 | `websets:read` |
+| 费用 | 连接不扣积分 |
+
+## Query 参数
+
+<ParamField query="cursor" type="number">
+  快照的 `stream_cursor`；也可使用 `Last-Event-ID` header。
+</ParamField>
+
+<ParamField query="items_revision" type="number">
+  快照的 `items_revision`。
+</ParamField>
+
+<ParamField query="match" default="qualified" type="string">
+  与 Items 接口相同，默认 `qualified`。
+</ParamField>
+
+<ParamField query="detail" default="compact" type="string">
+  `compact`、`standard` 或 `full`；默认 `compact`，Item 字段与 Items 接口对应模式一致。
+</ParamField>
+
+### 从快照建立连接
+
+应先读取 [Items 快照](/cn/api/v2/websets-items)，再把 checkpoint 成对传入：
+
+```bash cURL
+curl -N "https://revor.ai/api/v2/prospect-lists/WEBSET_ID/prospects/stream?cursor=289&items_revision=18&match=qualified&detail=full" \
+  -H "Authorization: Bearer sk-revor-REPLACE_ME" \
+  -H "Accept: text/event-stream"
+```
+
+初始快照与 SSE 应使用相同的 `match`、`detail`。切换筛选或详细度时，重新读取对应模式的快照，再用其 checkpoint 建流。
+
+<Warning>
+  `cursor` 与 `items_revision` 必须同时提供或同时省略。URL cursor 和 `Last-Event-ID` 同时存在时必须相等。不传 checkpoint 会从连接时的最新位置开始，只接收之后的变化。
+</Warning>
+
+<Note>
+  浏览器原生 `EventSource` 不能设置 Bearer header，请使用支持流式响应的 `fetch` 客户端。
+</Note>
+
+## 事件
+
+### `ready`
+
+```json ready
+{
+  "webset_id": "webset-uuid",
+  "request_id": "req_xxx",
+  "detail": "full",
+  "items_revision": 18,
+  "latest_items_revision": 18,
+  "stream_cursor": 289,
+  "webset_status": "verifying",
+  "progress": {
+    "stage": "verifying",
+    "goal": 25,
+    "verify_cap": 125,
+    "verified": 10,
+    "qualified": 8,
+    "full": 7,
+    "stop_reason": null,
+    "updated_at": "2026-10-31T06:00:00.000Z"
+  },
+  "failure": null,
+  "heartbeat_ms": 15000,
+  "max_stream_ms": 900000
+}
+```
+
+### `webset.state`
+
+```json webset.state
+{
+  "webset_id": "webset-uuid",
+  "webset_status": "completed",
+  "progress": {
+    "stage": "completed",
+    "goal": 25,
+    "verify_cap": 125,
+    "verified": 29,
+    "qualified": 29,
+    "full": 28,
+    "stop_reason": "goal_reached",
+    "updated_at": "2026-10-31T06:01:00.000Z"
+  },
+  "failure": null,
+  "items_revision": 21,
+  "stream_cursor": 292
+}
+```
+
+`ready`、`webset.state`、`complete` 均包含与名单详情接口一致的 `progress` 和 `failure`。进度或失败原因变化也会触发 `webset.state`，不必等状态切换。`failure.code` 是任务业务失败原因；`error.code=stream_failed` 则表示流本身读取失败。
+
+### `webset.strategy`
+
+条件或策略发生变化时发送完整可展示快照，字段与[策略接口](/cn/api/v2/websets-strategy)一致。
+
+如果完整快照超过 SSE 单帧上限，流改发 `webset.strategy.ref`。使用相同的 Bearer token 请求其中的 `strategy_url` 可获取完整快照；Item 流会继续。
+
+### `items.changed`
+
+```text
+id: 290
+event: items.changed
+data: {"webset_id":"...","detail":"full","items_revision":19,"chunk_index":0,"chunk_count":1,"upserts":[...],"removed_ids":[]}
+```
+
+- 按 Item `id` 应用 `upserts`，删除 `removed_ids`。
+- SSE `id` 是新的 `stream_cursor`。
+- 一个 revision 可能拆成多个 chunk。
+- 仅在 `chunk_index + 1 === chunk_count` 时提交新的 `items_revision`。
+- `upserts` 按请求的 `detail` 返回 Item。`standard` 包含完整实体、检查计数、条件摘要和时间；`full` 包含逐条件的 reasoning、confidence 和参考 URL。
+- 详细字段随变更事件保存，重连时重放同一版本，不拼接当前数据库详情。超大字段或证据列表会显式标记 `payload_truncated=true`，此时通过 REST 获取完整数据。
+
+### `reset`
+
+```json reset
+{
+  "webset_id": "webset-uuid",
+  "reason": "revision_gap",
+  "items_revision": 21,
+  "stream_cursor": 292
+}
+```
+
+原因可能为 `cursor_expired`、`revision_gap`、`revision_ahead` 或 `detail_unavailable`。停止应用当前增量，重新读取相同 `match`、`detail` 的完整快照并用新 checkpoint 建流。`detail_unavailable` 表示 checkpoint 后有旧版 compact 事件，无法重放请求的详细字段；不会静默降级为 compact。
+
+### `complete`
+
+终态和最后一批变更都已发送，服务端随后关闭连接。不要仅因 `webset.state=completed` 自行提前关闭。
+
+```json complete
+{
+  "webset_id": "webset-uuid",
+  "webset_status": "completed",
+  "items_revision": 21,
+  "stream_cursor": 292
+}
+```
+
+### `reconnect`
+
+单条连接时长按建连时的有效会员档位确定，见下表；以 `ready.max_stream_ms` 为准。到达上限时服务端发送 `reconnect` 并关闭连接，使用事件给出的 checkpoint 立即重连。后台挖掘不会因此停止。
+
+```json reconnect
+{
+  "webset_id": "webset-uuid",
+  "cursor": 292,
+  "items_revision": 21
+}
+```
+
+### `error`
+
+```json error
+{
+  "webset_id": "webset-uuid",
+  "code": "stream_failed",
+  "request_id": "req_xxx"
+}
+```
+
+使用最后完整 checkpoint 退避重连。心跳是 `: heartbeat ...` SSE 注释，不是业务事件。
+
+## 并发与恢复
+
+| 会员档位 | 单连接最长时长 | 单 API Key 连接数 | 单账号总连接数 | 同一账号同一名单连接数 |
+| --- | ---: | ---: | ---: | ---: |
+| Free | 15 分钟 | 2 | 5 | 2 |
+| Starter | 30 分钟 | 3 | 6 | 2 |
+| Scale | 45 分钟 | 5 | 10 | 3 |
+| Pro | 60 分钟 | 8 | 15 | 3 |
+| Enterprise | 90 分钟 | 15 | 30 | 5 |
+
+以上限制同时生效，Items 与 Find More 流共享额度。每个服务进程另有 50 条连接的总上限。超限返回 `429 sse_connection_limit_exceeded`。
+
+连接建立计一次读取请求；连接内事件、心跳和租约续期不重复计入 RPM。重连是新的请求。任务终态且最后一批变更发送完后，服务端发送 `complete` 并自动关闭；客户端断开或流异常也会释放订阅与额度，不必等待最长时长。
+
+共享连接额度使用五分钟租约，每分钟续期；续期失败会关闭流，不会继续占用一个已失去租约的逻辑连接。进程异常退出后，遗留租约最长约五分钟自然过期。事件短期保留 24 小时；REST Items 始终是权威数据源。

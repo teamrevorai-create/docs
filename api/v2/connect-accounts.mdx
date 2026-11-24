@@ -1,0 +1,78 @@
+---
+title: "List Connect accounts"
+description: "Returns the current user's connected Email, LinkedIn, and WhatsApp accounts. Call this endpoint before creating an outreach job to obtain an available account_id."
+keywords: ["Revor AI", "API v2", "List Connect accounts"]
+api: "GET https://revor.ai/api/v2/connect/accounts"
+authMethod: "bearer"
+playground: "simple"
+---
+
+Returns the current user's connected Email, LinkedIn, and WhatsApp accounts. Call this endpoint before creating an outreach job to obtain an available `account_id`.
+
+|  |  |
+| --- | --- |
+| Method | `GET` |
+| Permission | Connect accounts read |
+| Rate limit | Standard |
+
+## Query parameters
+
+<ParamField query="channel" type="string">
+  `email`, `linkedin`, or `whatsapp`.
+</ParamField>
+
+<ParamField query="can_send" type="string">
+  `true`, `false`, `1`, or `0`.
+</ParamField>
+
+## Example request
+
+```bash cURL
+curl --get \
+  --url "https://revor.ai/api/v2/connect/accounts" \
+  --header "Authorization: Bearer sk-revor-REPLACE_ME" \
+  --data-urlencode "channel=linkedin" \
+  --data-urlencode "can_send=true"
+```
+
+## Example response
+
+```json 200
+{
+  "ok": true,
+  "request_id": "req_xxx",
+  "items": [
+    {
+      "account_id": "connect_account_xxx",
+      "channel": "linkedin",
+      "name": "LinkedIn Account",
+      "account_identifier": "https://www.linkedin.com/in/example/",
+      "status": "ok",
+      "lifecycle_status": "active",
+      "can_send": true,
+      "can_receive": true
+    }
+  ]
+}
+```
+
+## Response fields
+
+- `status`: indicates whether the current connection or credentials are healthy.
+- `lifecycle_status`: represents the account lifecycle in Revor.
+
+<Warning>
+  Do not combine these internal states yourself to determine whether an account can send. Always use `can_send=true` when selecting an account for outreach.
+</Warning>
+
+<Note>
+  Typically, `status=credentials` means that the credentials must be updated or the account reconnected, while `status=error` means that the account is temporarily unavailable. Even if `lifecycle_status=active`, do not submit a send job when `can_send=false`.
+</Note>
+
+## Common errors
+
+| HTTP | Code | Description |
+| --- | --- | --- |
+| `400` | `invalid_channel` | The channel is not supported. |
+| `400` | `invalid_can_send` | The `can_send` value is not supported. |
+| `403` | `permission_denied` | The key does not have permission to read Connect accounts. |

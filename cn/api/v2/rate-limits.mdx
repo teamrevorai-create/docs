@@ -1,0 +1,119 @@
+---
+title: "限流、并发与重试"
+description: "REVOR AI 使用请求频率、活动任务并发和 Credits 三套独立约束。开放 API 与 MCP 共用账户级额度；创建多个 API Key 或改用另一种协议都不会增加可用额度。"
+keywords: ["Revor AI", "API v2", "限流、并发与重试"]
+---
+
+## 每分钟请求额度（RPM）
+
+RPM（Requests Per Minute）按账户、请求类型分别计算，每个类型拥有独立的一分钟窗口。
+
+| 请求类型 | 典型接口或工具 | Free | Starter | Scale | Pro | Enterprise |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| 普通读取 | Credits、Connect、潜客名单列表与详情 | 60 | 120 | 240 | 800 | 1,200 |
+| 状态轮询 | `GET /jobs/{id}`、`revor_get_job` | 120 | 240 | 500 | 1000 | 3000 |
+| 数据任务创建 | 公开网页、联系人、海关、潜客名单创建 | 2 | 5 | 10 | 20 | 60 |
+| 外联操作 | Email、LinkedIn、WhatsApp 触达与互动 | 5 | 10 | 20 | 30 | 60 |
+
+取消尚未运行的排队任务属于普通读取类控制操作。海关企业名称候选虽然当前不计费，但会启动数据查询，因此仍属于数据任务创建。
+
+## 账户共享与 API Key 限制
+
+会员 RPM 是账户级上限。同一账户下通过 REST API、Remote MCP 或不同 API Key 发起的调用，都会进入同一个对应类型的额度桶。
+
+API Key 还可以配置独立且更严格的限制。如果账户限制和 Key 限制同时存在，请求必须同时满足两者；Key 限制不能提高会员套餐额度。由管理员设置了更低 Key 限制时，更低的限制会先触发。
+
+## 活动任务并发
+
+活动任务是处于 `queued`、`scheduled` 或 `running` 状态的异步任务。各类任务分别计算：
+
+| 会员档位 | 海关数据 | 信息检索 | 潜客名单 |
+| --- | ---: | ---: | ---: |
+| Free | 1 | 1 | 1 |
+| Starter | 3 | 2 | 2 |
+| Scale | 5 | 3 | 3 |
+| Pro | 10 | 5 | 3 |
+| Enterprise | 20 | 10 | 5 |
+
+达到并发上限时不会创建或计费新任务。等待已有任务进入 `succeeded`、`failed` 或 `cancelled` 后再提交。
+
+## RPM、并发和 Credits 的区别
+
+SSE 连接额度独立于上面的活动任务并发，Items 与 Find More 流共享连接额度。Free / Starter / Scale / Pro / Enterprise 的单连接时长分别为 15 / 30 / 45 / 60 / 90 分钟；详细连接数和恢复规则见 [实时订阅潜客结果](/cn/api/v2/websets-items-stream)。任务完成后会自动断开，不会一直占满时长。
+
+| 约束 | 作用 | 何时恢复 |
+| --- | --- | --- |
+| RPM | 控制一分钟内的请求频率和突发流量 | 当前限流窗口结束后 |
+| 活动任务并发 | 限制同时排队或执行的长期任务数量 | 已有任务进入终态后 |
+| Credits | 决定账户可消费的业务用量 | 获得新 Credits 后 |
+
+通过其中一项检查不代表可以绕过另外两项。例如，账户仍有 Credits，但数据任务创建 RPM 或活动任务并发已满时，新任务仍会被拒绝。
+
+## REST API 限流响应头
+
+REST API 响应可能包含以下 headers。`X-RateLimit-*` 表示 API Key 级限制，`X-User-RateLimit-*` 表示账户级会员限制。
+
+| Header | 说明 |
+| --- | --- |
+| `X-RateLimit-Limit` | API Key 当前窗口的请求上限。 |
+| `X-RateLimit-Remaining` | API Key 当前窗口剩余请求数。 |
+| `X-RateLimit-Window-Ms` | API Key 限流窗口长度，单位为毫秒。 |
+| `X-RateLimit-Reset` | API Key 窗口预计恢复时间，Unix 时间戳（秒）。 |
+| `X-User-RateLimit-Limit` | 账户当前类型窗口的请求上限。 |
+| `X-User-RateLimit-Remaining` | 账户当前类型窗口剩余请求数。 |
+| `X-User-RateLimit-Window-Ms` | 账户限流窗口长度，单位为毫秒。 |
+| `X-User-RateLimit-Reset` | 账户窗口预计恢复时间，Unix 时间戳（秒）。 |
+| `Retry-After` | 超限后至少等待的秒数。 |
+
+未单独配置 Key 限制时，部分 `X-RateLimit-*` 字段可能不返回；客户端应以实际响应为准。
+
+## HTTP 429
+
+触发账户级限流时返回：
+
+```json 账户级
+{
+  "ok": false,
+  "error": {
+    "code": "api_rate_limit_exceeded",
+    "message": "api_rate_limit_exceeded",
+    "request_id": "req_xxx",
+    "rate_limit_scope": "user"
+  }
+}
+```
+
+触发 API Key 级限制时，`code` 为 `api_key_rate_limit_exceeded`，`rate_limit_scope` 为 `api_key`。
+
+## 重试建议
+
+<Steps>
+  <Step title="优先按 Retry-After 等待">
+    收到 HTTP `429` 后，优先按照 `Retry-After` 等待，不要立即循环重试。
+  </Step>
+  <Step title="指数退避">
+    如果没有 `Retry-After`，从较短等待开始使用指数退避，并加入少量随机抖动。
+  </Step>
+  <Step title="调整轮询频率">
+    轮询异步任务时通常每 2 至 5 秒查询一次；任务运行时间变长后可逐步降低频率。
+  </Step>
+  <Step title="复用 Idempotency-Key">
+    网络超时后重试创建或外联操作时，复用原来的 `Idempotency-Key`；新的真实操作必须生成新值。
+  </Step>
+  <Step title="MCP 客户端遵守等待">
+    MCP 客户端应读取工具错误中提供的重试信息，并避免用 REST 或其他 Key 绕过等待时间。
+  </Step>
+</Steps>
+
+```ts 重试辅助代码
+const retryAfterSeconds = Number(
+  response.headers.get("Retry-After") || 1
+)
+await new Promise((resolve) =>
+  setTimeout(resolve, retryAfterSeconds * 1000)
+)
+```
+
+<Tip>
+  限流用于保护服务稳定性，并不代表任务失败或 Credits 已被扣除。只有业务接口明确返回任务已创建后，才应继续查询任务状态。
+</Tip>

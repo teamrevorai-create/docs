@@ -1,0 +1,48 @@
+---
+title: "读取单行目标详情"
+description: "获取指定行的触达目标详情，用于获取草稿 target ID。"
+api: "GET https://revor.ai/api/v2/websets/{websetId}/smart-outreach/items/{itemId}"
+authMethod: "bearer"
+playground: "simple"
+keywords:
+  - "Revor AI"
+  - "API v2"
+  - "读取单行目标详情"
+---
+
+获取指定行的触达目标详情。返回的 `targets` 中的 `id` 用于草稿接口。
+
+## 接口概览
+
+|  |  |
+| --- | --- |
+| 方法 | `GET` |
+| 路径 | `/api/v2/websets/{websetId}/smart-outreach/items/{itemId}` |
+| 权限 | `outreach.plans:read` |
+
+## 路径参数
+
+<ParamField path="websetId" type="string" required>
+  表格 UUID。
+</ParamField>
+
+<ParamField path="itemId" type="string" required>
+  行 UUID。
+</ParamField>
+
+## Query 参数
+
+<ParamField query="channel" type="string" required>
+  渠道，例如 `email`。
+</ParamField>
+
+## 请求示例
+
+```bash cURL
+curl "https://revor.ai/api/v2/websets/webset-uuid/smart-outreach/items/item-uuid?channel=email" \
+  -H "Authorization: Bearer sk-revor-REPLACE_ME"
+```
+
+## 响应
+
+返回单行 targets，其 `id` 用于草稿接口。

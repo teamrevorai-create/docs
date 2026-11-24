@@ -1,0 +1,59 @@
+---
+title: "Check credit balance"
+description: "Returns the total credits currently available to the user who owns the API key. This is a synchronous, read-only endpoint. It does not create a job or consume credits."
+keywords: ["Revor AI", "API v2", "Check credit balance"]
+api: "GET https://revor.ai/api/v2/credits"
+authMethod: "bearer"
+playground: "simple"
+---
+
+Returns the total credits currently available to the user who owns the API key. This is a synchronous, read-only endpoint. It does not create a job or consume credits.
+
+|  |  |
+| --- | --- |
+| Method | `GET` |
+| Permission | Credits read |
+| Rate limit | Standard |
+| Returns | Credits balance |
+
+## Example request
+
+```bash cURL
+curl --get \
+  --url "https://revor.ai/api/v2/credits" \
+  --header "Authorization: Bearer sk-revor-REPLACE_ME"
+```
+
+## Example response
+
+```json 200
+{
+  "ok": true,
+  "request_id": "req_xxx",
+  "available_credits": 1280,
+  "as_of": "2026-08-25T08:00:00.000Z"
+}
+```
+
+## Response fields
+
+<ResponseField name="available_credits" type="number">
+  Currently available credits, with a minimum of `0`.
+</ResponseField>
+
+<ResponseField name="as_of" type="ISO 8601 string">
+  Time at which this balance was calculated.
+</ResponseField>
+
+<Note>
+  `available_credits` already accounts for credit groups, expiration dates, subscription status, and related rules. Clients should not calculate a replacement value by summing credit transactions.
+</Note>
+
+## Errors
+
+| HTTP | Code | Description |
+| --- | --- | --- |
+| `401` | `api_key_invalid` | The API key is invalid. |
+| `403` | `permission_denied` | The key does not have permission to read credits. |
+| `429` | `api_rate_limit_exceeded` | The request was rate limited. |
+| `500` | `credits_query_failed` | The balance query failed; do not interpret this error as a zero balance. |

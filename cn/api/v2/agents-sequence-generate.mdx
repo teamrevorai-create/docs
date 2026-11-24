@@ -1,0 +1,117 @@
+---
+title: "生成多轮策略内容"
+description: "为某轮跟进生成策略内容，不保存不发送。"
+api: "POST https://revor.ai/api/v2/agents/{agentId}/sequence/generate"
+authMethod: "bearer"
+playground: "simple"
+keywords:
+  - "Revor AI"
+  - "API v2"
+  - "生成多轮策略内容"
+---
+
+为某轮跟进生成策略内容草稿。不保存结果，不发送消息，不扣触达次数。
+
+## 接口概览
+
+|  |  |
+| --- | --- |
+| 方法 | `POST` |
+| 路径 | `/api/v2/agents/{agentId}/sequence/generate` |
+| 权限 | `agents:write` |
+| 幂等性 | 需要 `Idempotency-Key` |
+| 限流桶 | `expensive_create` |
+| 返回 | 公共 job |
+
+## 路径参数
+
+<ParamField path="agentId" type="string" required>
+  智能体 UUID。仅限 icebreaker 智能体。
+</ParamField>
+
+## 请求体
+
+<ParamField body="round_no" type="integer" required>
+  范围 `2-11`。
+</ParamField>
+
+<ParamField body="content_generation_mode" type="string">
+  生成模式。可选值: `ai_personalized`、`fixed_template`。
+</ParamField>
+
+<ParamField body="content_input" type="string">
+  内容输入/提示。
+</ParamField>
+
+<ParamField body="followup_purpose" type="string">
+  跟进目的或补充说明。
+</ParamField>
+
+<ParamField body="generate_both" type="boolean">
+  `true` 返回 `ai_content` 和 `fixed_content`；`false` 返回 `content_input`。
+</ParamField>
+
+<ParamField body="prior_rounds" type="array">
+  按时间顺序包含此前全部跟进轮次，每项为 `content_generation_mode`/`content_input`，数量必须等于 `round_no - 2`。
+</ParamField>
+
+```bash cURL
+curl -X POST "https://revor.ai/api/v2/agents/{agentId}/sequence/generate" \
+  -H "Authorization: Bearer sk-revor-REPLACE_ME" \
+  -H "Idempotency-Key: agent-sequence-gen-001" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "round_no": 2,
+    "content_generation_mode": "ai_personalized",
+    "content_input": "强调交货期",
+    "followup_purpose": "补充应用案例",
+    "generate_both": true,
+    "prior_rounds": []
+  }'
+```
+
+```json 请求体
+{
+  "round_no": 2,
+  "content_generation_mode": "ai_personalized",
+  "content_input": "强调交货期",
+  "followup_purpose": "补充应用案例",
+  "generate_both": true,
+  "prior_rounds": []
+}
+```
+
+## 响应
+
+```json 202
+{
+  "ok": true,
+  "request_id": "req_xxx",
+  "item": {
+    "id": "job-uuid",
+    "status": "queued",
+    "type": "agent_sequence_generate"
+  }
+}
+```
+
+## 行为说明
+
+- 使用已保存的首轮配置。
+- 不保存生成结果，不发送消息。
+- 不扣触达次数，但受 `expensive_create` 限流与异步任务并发限制。
+- 结果还包含 `agent_id`、`agent_version`、`round_no`。
+- 外部模型失败不自动重复生成；重新生成使用新幂等键。
+
+## 错误码
+
+| HTTP | 错误码 | 含义 |
+| --- | --- | --- |
+| `400` | `agent_input_invalid` | 参数错误 |
+| `403` | `permission_denied` | 缺少 `agents:write` |
+| `404` | `agent_not_found` | 智能体不存在 |
+| `404` | `agent_sequence_unavailable` | 多轮触达未开放 |
+
+## MCP 工具
+
+`revor_generate_agent_sequence_content`

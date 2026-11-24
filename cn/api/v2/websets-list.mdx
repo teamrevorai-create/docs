@@ -1,0 +1,189 @@
+---
+title: "查询潜客名单"
+description: "分页读取 Revor AI 潜客名单，按企业或人物筛选，并通过游标继续获取下一页。"
+api: "GET https://revor.ai/api/v2/prospect-lists"
+authMethod: "bearer"
+playground: "simple"
+keywords:
+  - "Revor AI"
+  - "API v2"
+  - "prospect lists"
+---
+
+分页查询 API Key 所属用户的 Revor AI 潜客名单。需要 `websets:read` 权限。
+
+<Note>
+  原入口 `GET /api/v2/websets` 继续支持，参数、返回字段和权限均保持一致。两个 URL 执行同一操作。
+</Note>
+
+## 概览
+
+|  |  |
+| --- | --- |
+| 方法 | `GET` |
+| 路径 | `https://revor.ai/api/v2/prospect-lists` |
+| 权限 | `websets:read` |
+
+## 请求示例
+
+```bash cURL
+curl --get \
+  --url "https://revor.ai/api/v2/prospect-lists" \
+  --header "Authorization: Bearer sk-revor-REPLACE_ME" \
+  --data-urlencode "limit=20" \
+  --data-urlencode "target_kind=company"
+```
+
+## 响应
+
+```json 200
+{
+  "ok": true,
+  "request_id": "req_xxx",
+  "items": [
+    {
+      "id": "webset-uuid",
+      "name": "北美挖掘机公司",
+      "query": "北美地区的挖掘机制造商……",
+      "target_kind": "company",
+      "status": "verifying",
+      "progress": {
+        "stage": "verifying",
+        "goal": 25,
+        "verify_cap": 75,
+        "verified": 31,
+        "qualified": 18,
+        "full": 12,
+        "stop_reason": null,
+        "updated_at": "2026-09-24T08:00:00.000Z"
+      },
+      "created_at": "2026-09-24T07:58:00.000Z",
+      "started_at": "2026-09-24T07:58:10.000Z",
+      "finished_at": null,
+      "updated_at": "2026-09-24T08:00:00.000Z"
+    }
+  ],
+  "next_cursor": null,
+  "has_more": false
+}
+```
+
+## Query 参数
+
+<ParamField query="limit" default="20" type="integer">
+  每页返回数量，范围为 `1` 至 `100`。
+</ParamField>
+
+<ParamField query="target_kind" type="string">
+  按 `company`（企业）或 `person`（人物）筛选。不传时不筛选。
+</ParamField>
+
+<ParamField query="cursor" type="string">
+  上一页返回的 `next_cursor`。请原样传递，不要解析或修改。
+</ParamField>
+
+## 响应字段
+
+<ResponseField name="ok" type="boolean">
+  请求是否成功。
+</ResponseField>
+
+<ResponseField name="request_id" type="string">
+  请求标识。
+</ResponseField>
+
+<ResponseField name="items" type="object[]">
+  当前页的潜客名单。
+
+  <Expandable title="properties">
+    <ResponseField name="id" type="string">
+      名单 ID。
+    </ResponseField>
+
+    <ResponseField name="name" type="string">
+      名单名称。
+    </ResponseField>
+
+    <ResponseField name="query" type="string">
+      创建时的自然语言条件。
+    </ResponseField>
+
+    <ResponseField name="target_kind" type="string">
+      `company` 或 `person`。
+    </ResponseField>
+
+    <ResponseField name="status" type="string">
+      当前状态。
+    </ResponseField>
+
+    <ResponseField name="progress" type="object">
+      进度信息。
+
+      <Expandable title="properties">
+        <ResponseField name="stage" type="string">
+          当前阶段。
+        </ResponseField>
+
+        <ResponseField name="goal" type="integer">
+          目标数量。
+        </ResponseField>
+
+        <ResponseField name="verify_cap" type="integer">
+          核验上限。
+        </ResponseField>
+
+        <ResponseField name="verified" type="integer">
+          已核验数量。
+        </ResponseField>
+
+        <ResponseField name="qualified" type="integer">
+          合格数量。
+        </ResponseField>
+
+        <ResponseField name="full" type="integer">
+          完全匹配数量。
+        </ResponseField>
+
+        <ResponseField name="stop_reason" type="string | null">
+          停止原因。
+        </ResponseField>
+
+        <ResponseField name="updated_at" type="string">
+          更新时间。
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+
+    <ResponseField name="created_at" type="string">
+      创建时间。
+    </ResponseField>
+
+    <ResponseField name="started_at" type="string">
+      开始时间。
+    </ResponseField>
+
+    <ResponseField name="finished_at" type="string | null">
+      完成时间。
+    </ResponseField>
+
+    <ResponseField name="updated_at" type="string">
+      更新时间。
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="next_cursor" type="string | null">
+  下一页游标；未返回游标时为 `null`。
+</ResponseField>
+
+<ResponseField name="has_more" type="boolean">
+  是否还有下一页。
+</ResponseField>
+
+## 分页读取
+
+`has_more=true` 时把 `next_cursor` 原样传给下一次请求。该 cursor 只用于 REST 分页，不是 SSE 的 `stream_cursor`。
+
+<Accordion title="挖掘名单与导入表格">
+  列表包含挖掘名单与 CSV/XLSX 导入表格。新增 `source` 字段区分 `revor`、`tabular_import` 和历史 `csv_import`；`total_items` 返回已保存的行数。导入进行中状态为 `importing`，导入表格的搜索目标及匹配验证统计为 `null`。
+</Accordion>

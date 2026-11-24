@@ -1,0 +1,191 @@
+---
+title: "Update agent"
+description: "Partially edit an agent's configuration."
+api: "PATCH https://revor.ai/api/v2/agents/{agentId}"
+authMethod: "bearer"
+playground: "simple"
+keywords:
+  - "Revor AI"
+  - "API v2"
+  - "Update agent"
+---
+
+Partially update an agent's configuration.
+
+## Overview
+
+|  |  |
+| --- | --- |
+| Method | `PATCH` |
+| Path | `/api/v2/agents/{agentId}` |
+| Permission | `agents:write` |
+| Returns | `item` with its new version |
+
+## Path parameter
+
+<ParamField path="agentId" type="string" required>
+  UUID of the agent to update.
+</ParamField>
+
+## Request body
+
+<ParamField body="expected_updated_at" type="string" required>
+  Copied exactly from the latest detail response. Ensures optimistic concurrency.
+</ParamField>
+
+<ParamField body="name" type="string">
+  Agent name.
+</ParamField>
+
+<ParamField body="description" type="string">
+  Nullable. Can be cleared with `null`.
+</ParamField>
+
+<ParamField body="status" type="string">
+  Agent status.
+</ParamField>
+
+<ParamField body="channel_scope" type="array">
+  Channel scope array.
+</ParamField>
+
+<ParamField body="style_tags" type="array">
+  Style tags array.
+</ParamField>
+
+<ParamField body="tags" type="array">
+  Tags array.
+</ParamField>
+
+## Editable fields
+
+<AccordionGroup>
+  <Accordion title="Basic">
+    - `name`
+    - `description`
+    - `status`
+    - `channel_scope`
+    - `style_tags`
+    - `tags`
+  </Accordion>
+
+  <Accordion title="Sender and company">
+    - `sender_name`
+    - `sender_title`
+    - `sender_company_name`
+    - `sender_company_website`
+    - `sender_company_summary`
+    - `sender_bio`
+    - `sender_linkedin_url`
+    - `sender_avatar_url`
+    - `source_company_url`
+  </Accordion>
+
+  <Accordion title="Content">
+    - `goal_type`
+    - `icebreaker_goal_prompt`
+    - `autoreply_goal_prompt`
+    - `icebreaker_system_prompt`
+    - `autoreply_system_prompt`
+    - `icebreaker_reference_template`
+    - `autoreply_reference_template`
+    - `reference_template_strict`
+    - `icebreaker_content_mode`
+    - `icebreaker_content`
+    - `extra_context`
+  </Accordion>
+
+  <Accordion title="Timing">
+    - `send_language`
+    - `timezone`
+    - `work_time_preset`
+    - `send_time_start`
+    - `send_time_end`
+
+    Times use `HH:mm`. The timezone must be valid.
+  </Accordion>
+
+  <Accordion title="Channels">
+    - `linkedin_enabled`
+    - `whatsapp_enabled`
+    - `email_enabled`
+    - `linkedin_auto_engagement`
+    - `autoreply_block_prior_platform_conversation`
+    - `interval_secs` and `daily_limit` for `linkedin`, `whatsapp`, and `email`
+  </Accordion>
+</AccordionGroup>
+
+### Setting objects
+
+<AccordionGroup>
+  <Accordion title="Knowledge settings">
+    `knowledge_settings` accepts `kb_ids` for owned or public knowledge bases.
+  </Accordion>
+
+  <Accordion title="Autoreply stop settings">
+    `autoreply_stop_settings` accepts information-collection settings, `terminalRules`, and `maxAutoReplyTurns`.
+  </Accordion>
+
+  <Accordion title="Autoreply first reply settings">
+    `autoreply_first_reply_settings` accepts `fixed_welcome_enabled` and `fixed_welcome_message`.
+  </Accordion>
+</AccordionGroup>
+
+These objects merge their public subfields while preserving private settings. Arrays are replaced.
+
+## Request example
+
+```bash cURL
+curl -X PATCH "https://revor.ai/api/v2/agents/{agentId}" \
+  -H "Authorization: Bearer sk-revor-REPLACE_ME" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "expected_updated_at": "2026-11-13T04:44:50.096+00:00",
+    "name": "Sales assistant",
+    "description": null
+  }'
+```
+
+## Response
+
+```json 200
+{
+  "ok": true,
+  "request_id": "req_xxx",
+  "item": {
+    "id": "agent-uuid",
+    "name": "Sales assistant",
+    "updated_at": "2026-11-13T04:44:50.096+00:00"
+  }
+}
+```
+
+### Behavior
+
+- Stale versions return `409`; read and reconcile changes before retrying.
+- Omitted fields remain unchanged.
+- Nullable text can be cleared with `null`.
+- Arrays can be cleared with `[]`.
+- Unknown fields, incorrect types, and empty patches are rejected.
+- Successful writes return `item` with its new version.
+
+<Note>
+  Writes use the `outreach_write` rate-limit bucket.
+  Existing V1/V2, required-field, and limit normalization rules apply. Mode/version conversion is unsupported. The independent `icebreaker_ai_content` and `icebreaker_fixed_template` drafts are editable.
+</Note>
+
+<Warning>
+  Attachment uploads, advanced model settings, and whole `channel_settings` objects are outside this public contract. Internal metadata, scraping snapshots, and credentials are excluded from public output.
+</Warning>
+
+## Errors
+
+| HTTP | Code | Meaning |
+| --- | --- | --- |
+| `400` | `agent_input_invalid` | Request does not match the contract |
+| `400` | `agent_configuration_invalid` | Violates business validation rules |
+| `403` | `permission_denied` | Missing required permission |
+| `404` | `agent_not_found` | Agent does not exist, was deleted, or belongs to another user |
+| `409` | `agent_config_conflict` | Version expired or concurrent modification |
+| `409` | `agent_knowledge_base_not_found` | Linked knowledge base is unavailable |
+| `500` | `agent_operation_failed` | Operation failed. Read current state before retrying |

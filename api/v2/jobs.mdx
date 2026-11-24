@@ -1,0 +1,133 @@
+---
+title: "Get an asynchronous job"
+description: "Gets an outreach, research, customs-data, or prospect-list preparation job. A job can only be read by its owner, and the API key must still have read permission for the corresponding capability."
+keywords: ["Revor AI", "API v2", "Get an asynchronous job"]
+api: "GET https://revor.ai/api/v2/jobs/{id}"
+authMethod: "bearer"
+playground: "simple"
+---
+
+Gets an outreach, research, customs-data, or prospect-list preparation job. A job can only be read by its owner, and the API key must still have read permission for the corresponding capability.
+
+| Attribute | Value |
+| --- | --- |
+| Method | `GET` |
+| Path | `/api/v2/jobs/{id}` |
+| Permission | Read for the job's original capability |
+| Rate limit | Job polling tier |
+| Idempotency | Not applicable |
+| Returns | Job object |
+
+## Cancel a queued job
+
+This endpoint only guarantees cancellation for `queued` or `scheduled` jobs and requires write permission for the job's original action. After a job enters `running`, it may already have called an external service or caused side effects, so the endpoint returns HTTP `409 job_already_running` instead of falsely reporting success. A job already in a terminal state is returned unchanged, making retries safe.
+
+| Attribute | Value |
+| --- | --- |
+| Method | `POST` |
+| Path | `/api/v2/jobs/{id}/cancel` |
+| Permission | Write for the job's original action |
+| Rate limit | Read tier (lightweight control) |
+| Idempotency | Not applicable |
+| Returns | Job object (unchanged if already terminal) |
+
+<RequestExample>
+
+```bash cURL - Cancel job
+curl -X POST "https://revor.ai/api/v2/jobs/JOB_ID/cancel" \
+  -H "Authorization: Bearer sk-revor-REPLACE_ME"
+```
+
+```bash cURL - Get job
+curl "https://revor.ai/api/v2/jobs/JOB_ID" \
+  -H "Authorization: Bearer sk-revor-REPLACE_ME"
+```
+
+</RequestExample>
+
+## Job statuses
+
+| Status | Terminal | Description |
+| --- | --- | --- |
+| `queued` | No | Accepted and waiting to be processed. |
+| `scheduled` | No | Scheduled for later processing. |
+| `running` | No | Currently executing. |
+| `settling` | No | Confirming and saving the result. |
+| `succeeded` | Yes | Completed successfully; read `result`. |
+| `failed` | Yes | Failed; read `error`. |
+| `cancelled` | Yes | The job was cancelled. |
+
+<ResponseExample>
+
+```json 200
+{
+  "ok": true,
+  "request_id": "req_xxx",
+  "item": {
+    "id": "job-uuid",
+    "action": "research.public_web",
+    "status": "succeeded",
+    "progress": {
+      "stage": "completed",
+      "percent": 100
+    },
+    "resource": {
+      "type": "company_research_job",
+      "id": "job-uuid"
+    },
+    "scheduled_at": "2026-08-25T08:00:00.000Z",
+    "started_at": "2026-08-25T08:00:01.000Z",
+    "finished_at": "2026-08-25T08:00:05.000Z",
+    "attempt_count": 1,
+    "result": {},
+    "error": null,
+    "billing": {
+      "status": "settled",
+      "charged_credits": 5,
+      "pending_units": 0
+    }
+  }
+}
+```
+
+</ResponseExample>
+
+Outreach jobs also return `channel`, with a value of `email`, `linkedin`, or `whatsapp`. This endpoint does not add an extra charge to outreach jobs, so `billing.status` is normally `not_metered`.
+
+Common billing statuses are `pending` while billable work has not settled, `settled` after final usage is charged, `not_billable` for a free action, and `not_metered` for an action outside this job billing flow. Always use `charged_credits` from the terminal job as the actual charge.
+
+## Polling guidance
+
+<Steps>
+  <Step title="Polling interval">
+    Poll every 2 to 5 seconds and use exponential backoff for network errors.
+  </Step>
+  <Step title="Task not found">
+    `404 task_not_found` does not mean that creation is still pending. Do not retry an incorrect job ID indefinitely.
+  </Step>
+  <Step title="Terminal states">
+    Only `succeeded`, `failed`, and `cancelled` are terminal states.
+  </Step>
+  <Step title="Result and error">
+    For `succeeded`, `result` is an object and `error` is `null`. For `failed`, `result` is `null` and `error.code` is a stable error identifier.
+  </Step>
+</Steps>
+
+## Prospect-list preparation jobs
+
+The `preparation_job.id` returned by `POST /api/v2/prospect-lists` only confirms whether a prospect list started successfully. Prospect discovery may still be running when this job is `succeeded`.
+
+```text
+preparation_job: queued - running - succeeded
+prospect list: generating_criteria - searching - verifying - completed
+```
+
+<Warning>
+  The job status describes one asynchronous operation, while the prospect-list status describes the entire discovery process. They are not interchangeable.
+</Warning>
+
+To determine whether the list is complete, call:
+
+```http GET /api/v2/prospect-lists/{webset_id}
+GET /api/v2/prospect-lists/{webset_id}
+```

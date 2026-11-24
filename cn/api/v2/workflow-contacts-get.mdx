@@ -1,0 +1,84 @@
+---
+title: "读取联系人集合"
+description: "获取指定行指定列的联系人集合。"
+api: "GET https://revor.ai/api/v2/websets/{websetId}/items/{itemId}/contacts/{fieldKey}"
+authMethod: "bearer"
+playground: "simple"
+keywords:
+  - "Revor AI"
+  - "API v2"
+  - "读取联系人集合"
+---
+
+读取指定表格中某行的联系人集合。联系人列包括系统列和自定义调研列。
+
+## 接口概览
+
+|  |  |
+| --- | --- |
+| 方法 | `GET` |
+| 路径 | `/api/v2/websets/{websetId}/items/{itemId}/contacts/{fieldKey}` |
+| 权限 | `prospects.contacts:read` |
+
+## 路径参数
+
+<ParamField path="websetId" type="string" required>
+  表格 UUID。
+</ParamField>
+
+<ParamField path="itemId" type="string" required>
+  行 UUID。
+</ParamField>
+
+<ParamField path="fieldKey" type="string" required>
+  联系人列 key。支持的值见下文。
+</ParamField>
+
+## 支持的 fieldKey
+
+- `imported_contacts`
+- `snovio_key_contacts`
+- `company_social_contacts`
+- 实际自定义联系人列 key（可先查 [`/research/columns`](/cn/api/v2/workflow-research-columns)）
+
+普通标量列不能当联系人集合编辑。
+
+## 各来源联系人字段格式
+
+<AccordionGroup>
+  <Accordion title="Snovio 联系人">
+    - `email`
+    - `firstName`
+    - `lastName`
+    - `fullName`
+    - `position`
+    - `linkedin`
+    - `status`
+  </Accordion>
+
+  <Accordion title="其他来源">
+    - `id`
+    - `contact_key`
+    - `contact_kind`
+    - `full_name`
+    - `title`
+    - `company_name`
+
+    渠道值支持字符串或字符串数组。
+  </Accordion>
+
+  <Accordion title="各来源支持的渠道">
+    - **imported_contacts** - `email`、`whatsapp`、`phone`、`linkedin`
+    - **官网联系方式** - `email`、`whatsapp`、`phone`
+    - **自定义联系人列** - `email`、`whatsapp`、`phone`、`linkedin`、`facebook`、`instagram`、`custom`
+  </Accordion>
+</AccordionGroup>
+
+不支持的字段会被拒绝。读取时 `contacts` 与 `channels` 分开投影，`channels.contact_id` 关联 `contacts.id`。
+
+## 请求示例
+
+```bash cURL
+curl "https://revor.ai/api/v2/websets/webset-uuid/items/item-uuid/contacts/snovio_key_contacts" \
+  -H "Authorization: Bearer sk-revor-REPLACE_ME"
+```

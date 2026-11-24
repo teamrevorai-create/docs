@@ -1,0 +1,60 @@
+---
+title: "批量查询触达状态"
+description: "批量查询指定行的触达投递状态。"
+api: "POST https://revor.ai/api/v2/websets/{websetId}/smart-outreach/statuses"
+authMethod: "bearer"
+playground: "simple"
+keywords:
+  - "Revor AI"
+  - "API v2"
+  - "批量查询触达状态"
+---
+
+批量查询指定行的触达投递状态。最多查询 100 行。
+
+## 接口概览
+
+|  |  |
+| --- | --- |
+| 方法 | `POST` |
+| 路径 | `/api/v2/websets/{websetId}/smart-outreach/statuses` |
+| 权限 | `outreach.plans:read` |
+
+## 路径参数
+
+<ParamField path="websetId" type="string" required>
+  表格 UUID。
+</ParamField>
+
+## 请求体
+
+```json 批量状态请求
+{
+  "item_ids": ["行UUID"],
+  "channels": ["email", "linkedin"]
+}
+```
+
+<ParamField body="item_ids" type="string[]" required>
+  行 UUID 数组，最多 100 行。
+</ParamField>
+
+<ParamField body="channels" type="string[]" required>
+  渠道列表，例如 `["email", "linkedin"]`。
+</ParamField>
+
+## 请求示例
+
+```bash cURL
+curl -X POST "https://revor.ai/api/v2/websets/webset-uuid/smart-outreach/statuses" \
+  -H "Authorization: Bearer sk-revor-REPLACE_ME" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "item_ids": ["item-uuid"],
+    "channels": ["email"]
+  }'
+```
+
+## 响应
+
+返回每行在各渠道上的投递状态。

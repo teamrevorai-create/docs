@@ -1,0 +1,89 @@
+---
+title: "确认文件上传并入队"
+description: "通知系统文件已上传完毕，开始处理导入任务。"
+api: "POST https://revor.ai/api/v2/imports/{runId}/complete"
+authMethod: "bearer"
+playground: "simple"
+keywords:
+  - "Revor AI"
+  - "API v2"
+  - "确认文件上传并入队"
+---
+
+文件上传完成后，调用此接口通知系统开始处理。需要提供 `source_kind`、`file_name` 和 `declared_size_bytes`。
+
+## 接口概览
+
+|  |  |
+| --- | --- |
+| 方法 | `POST` |
+| 路径 | `/api/v2/imports/{runId}/complete` |
+| 权限 | `prospects.imports:write` |
+| 幂等性 | 通过 `Idempotency-Key` 请求头实现 |
+
+## 路径参数
+
+<ParamField path="runId" type="string" required>
+  导入任务 ID，由 `POST /imports` 返回。
+</ParamField>
+
+## 请求体
+
+```json 确认上传
+{
+  "source_kind": "csv",
+  "file_name": "prospects.csv",
+  "declared_size_bytes": 1048576
+}
+```
+
+<ParamField body="source_kind" type="string" required>
+  `"csv"` 或 `"xlsx"`。
+</ParamField>
+
+<ParamField body="file_name" type="string" required>
+  文件名。
+</ParamField>
+
+<ParamField body="declared_size_bytes" type="number" required>
+  文件大小（字节）。
+</ParamField>
+
+## 请求示例
+
+```bash cURL
+curl -X POST "https://revor.ai/api/v2/imports/import-uuid/complete" \
+  -H "Authorization: Bearer sk-revor-REPLACE_ME" \
+  -H "Idempotency-Key: import-complete-001" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "source_kind": "csv",
+    "file_name": "prospects.csv",
+    "declared_size_bytes": 1048576
+  }'
+```
+
+## 行为说明
+
+- 调用此接口后，系统开始处理导入任务
+- 使用 `Idempotency-Key` 防止重复处理
+- 每个步骤使用不同键，同一步骤重试保留原键
+- 不要跨步骤复用同一个幂等键
+- 确认后调用 [`GET /imports/{runId}`](/cn/api/v2/workflow-imports-get) 查询进度
+
+## 响应
+
+```json 200
+{
+  "item": {
+    "id": "import-uuid",
+    "webset_id": "webset-uuid",
+    "status": "processing",
+    "source_kind": "csv"
+  }
+}
+```
+
+<Warning>
+  `init` 和 `complete` 均使用 `Idempotency-Key`；每个步骤使用不同键，同一步骤重试保留原键。不要跨步骤复用同一个幂等键。
+</Warning>

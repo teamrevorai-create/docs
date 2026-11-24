@@ -1,0 +1,304 @@
+---
+title: "开始使用"
+description: "Revor AI API v2 提供潜在客户发现、公开网页与联系人搜索、海关贸易数据、Connect 账号查询和单次外联。耗时操作采用异步任务，客户端提交后使用统一任务接口查询结果。"
+keywords: ["Revor AI", "API v2", "开始使用"]
+---
+
+## 发起第一个请求
+
+在 [API Key 管理页面](https://revor.ai/my-api-keys) 创建 API Key 后，可以先查询积分余额，确认鉴权和账户状态正常：
+
+```bash cURL
+curl "https://revor.ai/api/v2/credits" \
+  -H "Authorization: Bearer sk-revor-REPLACE_ME"
+```
+
+## 选择能力
+
+| 我想完成什么 | 使用的能力 | 从这里开始 |
+| --- | --- | --- |
+| 按自然语言条件寻找一批企业或人物 | 潜在客户发现 | `POST /prospect-lists` |
+| 搜索企业公开网页资料 | 公开网页搜索 | `POST /research/public-web` |
+| 按企业官网域名寻找联系人 | 企业联系人搜索 | `POST /research/contacts` |
+| 按商品和国家发现进出口企业 | 海关贸易数据 | `POST /customs/companies/search` |
+| 查询已知企业的进出口、交易对手和趋势 | 海关贸易数据 | `POST /customs/company-candidates` |
+| 发送 Email、LinkedIn 消息或 WhatsApp 消息 | 单次外联 | 先调用 `GET /connect/accounts` |
+| 自动查找并点赞相关 LinkedIn 帖子 | LinkedIn 智能点赞 | `POST /outreach/linkedin/post-likes` |
+
+潜在客户发现能力在当前 API 路径和响应字段中使用 `websets` / `webset`。它表示一份持续生成并可分页读取的潜客名单，不要求调用方理解任何内部实现。
+
+## Base URL
+
+```api
+https://revor.ai/api/v2
+```
+
+API v1 的 Connect 和 Outreach 接口暂时保留兼容。两个版本可以使用同一套 API Key，但新接入应使用 v2 路径，并确保 Key 具有对应接口权限。
+
+## 鉴权
+
+推荐使用 `Authorization: Bearer` header：
+
+```bash Bearer header
+curl "https://revor.ai/api/v2/credits" \
+  -H "Authorization: Bearer sk-revor-REPLACE_ME"
+```
+
+也可以使用 `x-api-key`：
+
+```bash x-api-key header
+curl "https://revor.ai/api/v2/credits" \
+  -H "x-api-key: sk-revor-REPLACE_ME"
+```
+
+<Warning>
+  不要把 API Key 放在 URL、前端代码、公开仓库或日志中。
+</Warning>
+
+## 会员限流与并发
+
+开放 API 与 MCP 共用账户级额度。多个 API Key 和两种调用协议不会分别获得一套额度。
+
+请求按普通读取、任务轮询、数据任务创建和外联操作分别限制。Credits、每分钟请求频率和活动任务并发是三套独立约束。各套餐额度、响应头、错误示例和客户端重试方式参见 [限流、并发与重试](/cn/api/v2/rate-limits)。
+
+## 通用返回结构
+
+成功响应包含 `ok: true` 和 `request_id`。列表通常返回 `items`，单个资源和异步任务通常返回 `item`。
+
+<CodeGroup>
+
+```json 成功
+{
+  "ok": true,
+  "request_id": "req_xxx",
+  "item": {}
+}
+```
+
+```json 错误
+{
+  "ok": false,
+  "error": {
+    "code": "invalid_request",
+    "message": "invalid_request",
+    "request_id": "req_xxx"
+  }
+}
+```
+
+</CodeGroup>
+
+错误响应包含稳定的公开错误码。联系支持或排查问题时请保留 `request_id`。
+
+## 幂等键
+
+`Idempotency-Key` 是可选的可靠重试能力。普通请求可以不发送；如果调用方可能在网络超时后自动重试，建议为同一次业务操作生成一个唯一值：
+
+```http 幂等键 header
+Idempotency-Key: 2d1ed06a-4e63-4e36-9e88-53784bb61b0b
+```
+
+- 同一路径、同一 Key、相同请求体：返回第一次请求的结果，不重复创建任务。
+- 同一路径、同一 Key、不同请求体：返回 `409`。
+- 一次新的真实操作应生成新的幂等键；网络超时重试应复用原键。
+- 不发送 Key：每次 `POST` 都视为独立操作；相同请求被重复提交时会创建多个任务，并可能分别执行和计费。
+
+例外：`POST /prospect-lists/{id}/expand` 必须提供 `Idempotency-Key`，缺少时返回 `400 idempotency_key_required`。
+
+## 异步任务与 Prefer wait
+
+研究和海关接口通常返回 HTTP `202 Accepted`。保存 `item.id`，然后轮询：
+
+```http GET /api/v2/jobs/{id}
+GET /api/v2/jobs/{id}
+```
+
+如果调用方愿意短暂等待，可以在创建请求中加入：
+
+```http Prefer header
+Prefer: wait=20
+```
+
+任务在等待时间内结束时，创建接口返回 HTTP `200` 和终态任务；否则仍返回 HTTP `202`。
+
+<Note>
+  超时不代表任务失败，继续使用任务 ID 轮询即可。
+</Note>
+
+### Job 状态与业务资源状态
+
+Job 和潜客名单是两层不同状态：
+
+```text
+POST /prospect-lists
+  ├─ preparation_job：queued - running - succeeded
+  └─ 潜客名单：generating_criteria - searching - verifying - completed
+```
+
+Job 表示某个异步操作是否执行完成；潜客名单状态表示目标发现业务本身进行到哪个阶段。因此 `preparation_job.status=succeeded` 只说明名单已成功启动，不代表名单已经生成完成。
+
+## 接口列表
+
+| 能力 | 方法与路径 | 说明 |
+| --- | --- | --- |
+| Connect | `GET /api/v2/connect/accounts` | 查询可用于触达的已连接账号。 |
+| Outreach | `POST /api/v2/outreach/dispatches` | 发送 Email、LinkedIn 或 WhatsApp 单次外联。 |
+| Outreach | `POST /api/v2/outreach/linkedin/post-likes` | 自动查找并点赞目标用户的一条相关 LinkedIn 帖子。 |
+| 积分 | `GET /api/v2/credits` | 查询当前可用积分。 |
+| 潜在客户发现 | `GET /api/v2/prospect-lists` | 分页查询潜客名单。 |
+| 潜在客户发现 | `POST /api/v2/prospect-lists` | 按会员档位创建企业或人物潜客名单。 |
+| 潜在客户发现 | `GET /api/v2/prospect-lists/{id}` | 查询名单生成进度。 |
+| 潜在客户发现 | `GET /api/v2/prospect-lists/{id}/search-plan` | 查询挖掘条件和搜索策略。 |
+| 潜在客户发现 | `GET /api/v2/prospect-lists/{id}/prospects` | 分页读取符合条件的企业或人物。 |
+| 潜在客户发现 | `GET /api/v2/prospect-lists/{id}/prospects/stream` | 实时订阅名单状态、策略和结果变化。 |
+| 潜在客户发现 | `POST /api/v2/prospect-lists/{id}/expand` | 在已有名单上继续挖掘。 |
+| 潜在客户发现 | `GET /api/v2/prospect-lists/{id}/expand/stream` | 订阅指定 Find More 任务。 |
+| 任务 | `GET /api/v2/jobs/{id}` | 查询外联、研究、海关或名单启动任务。 |
+| 任务 | `POST /api/v2/jobs/{id}/cancel` | 取消尚未开始执行的任务。 |
+| 信息检索 | `POST /api/v2/research/public-web` | 搜索公开网页资料。 |
+| 搜索 | `POST /api/v2/search/companies` | 发现公司候选并返回结构化资料与来源，见 [搜索接口](/cn/api/v2/search)。 |
+| 搜索 | `POST /api/v2/search/people` | 发现人物候选并返回职业资料与来源，见 [搜索接口](/cn/api/v2/search)。 |
+| 信息检索 | `POST /api/v2/research/contacts` | 按企业域名搜索联系人。 |
+| 海关数据 | `POST /api/v2/customs/company-candidates` | 查找可查询的企业名称候选。 |
+| 海关数据 | `POST /api/v2/customs/companies/search` | 按商品、国家和时间发现进口商或出口商。 |
+| 海关数据 | `POST /api/v2/customs/trade-reports` | 一次生成完整贸易报告。 |
+| 海关数据 | `POST /api/v2/customs/counterparties` | 查询主要交易对手。 |
+| 海关数据 | `POST /api/v2/customs/categories` | 查询主要商品类别。 |
+| 海关数据 | `POST /api/v2/customs/trends` | 查询贸易趋势。 |
+| 海关数据 | `POST /api/v2/customs/countries` | 查询贸易国家分布。 |
+
+## 详细文档
+
+<CardGroup cols={2}>
+  <Card title="积分余额" icon="coins" href="/cn/api/v2/credits">
+  </Card>
+
+  <Card title="限流、并发与重试" icon="gauge" href="/cn/api/v2/rate-limits">
+  </Card>
+
+  <Card title="查询 Connect 账号" icon="key" href="/cn/api/v2/connect-accounts">
+  </Card>
+
+  <Card title="发送单次外联" icon="send" href="/cn/api/v2/outreach-dispatches">
+  </Card>
+
+  <Card title="自动查找并点赞 LinkedIn 相关帖子" icon="thumbs-up" href="/cn/api/v2/linkedin-post-likes">
+  </Card>
+
+  <Card title="异步任务" icon="clock" href="/cn/api/v2/jobs">
+  </Card>
+
+  <Card title="潜在客户发现" icon="search" href="/cn/api/v2/targets">
+  </Card>
+
+  <Card title="创建潜客名单" icon="plus" href="/cn/api/v2/websets-create">
+  </Card>
+
+  <Card title="查询潜客名单" icon="list" href="/cn/api/v2/websets-list">
+  </Card>
+
+  <Card title="查询名单详情" icon="file" href="/cn/api/v2/websets-detail">
+  </Card>
+
+  <Card title="查询挖掘条件与搜索策略" icon="search" href="/cn/api/v2/websets-strategy">
+  </Card>
+
+  <Card title="分页读取潜客结果" icon="list" href="/cn/api/v2/websets-items">
+  </Card>
+
+  <Card title="实时订阅潜客结果" icon="radio" href="/cn/api/v2/websets-items-stream">
+  </Card>
+
+  <Card title="扩展更多潜客" icon="plus" href="/cn/api/v2/websets-find-more">
+  </Card>
+
+  <Card title="实时订阅 Find More" icon="radio" href="/cn/api/v2/websets-find-more-stream">
+  </Card>
+
+  <Card title="公开网页与企业联系人搜索" icon="globe" href="/cn/api/v2/research">
+  </Card>
+
+  <Card title="海关贸易数据" icon="ship" href="/cn/api/v2/customs">
+  </Card>
+</CardGroup>
+
+## 国家代码格式
+
+不同能力使用的国家代码长度不同。`research.public-web` 的 `user_location` 使用 ISO 3166-1 alpha-2 两位代码，例如 `US`；所有海关国家过滤字段使用 ISO 3166-1 alpha-3 三位代码，例如 `USA`、`CHN`、`RUS`。两种格式不能混用；长度错误的代码无法表达预期过滤条件。
+
+## 推荐流程
+
+### 单次外联
+
+<Steps>
+  <Step title="取得可发送账号">
+    `GET /connect/accounts?can_send=true` 取得可发送账号的 `account_id`。
+  </Step>
+  <Step title="发送外联">
+    调用 `POST /outreach/dispatches` 或 LinkedIn 点赞接口；需要安全重试时可发送 `Idempotency-Key`。
+  </Step>
+  <Step title="轮询任务">
+    保存响应中的 `item.id`，轮询 `GET /jobs/{id}`。
+  </Step>
+  <Step title="读取结果">
+    状态为 `succeeded` 时读取 `item.result`；状态为 `failed` 时读取 `item.error.code`。
+  </Step>
+</Steps>
+
+### 潜在客户发现
+
+<Steps>
+  <Step title="确认可用积分">
+    `GET /credits` 确认可用积分。
+  </Step>
+  <Step title="创建潜客名单">
+    `POST /prospect-lists` 创建潜客名单，保存响应中的 `webset.id`。
+  </Step>
+  <Step title="获取快照">
+    使用 `GET /prospect-lists/{id}/prospects?detail=compact&limit=10` 获取快照和 checkpoint。
+  </Step>
+  <Step title="实时订阅结果">
+    连接 `GET /prospect-lists/{id}/prospects/stream`，实时应用结果和状态变化，直到收到 `complete`。
+  </Step>
+</Steps>
+
+<Note>
+  `preparation_job.id` 只用于确认名单是否成功启动，不代表潜在客户发现已经完成。
+</Note>
+
+### 信息检索和海关任务
+
+<Steps>
+  <Step title="提交创建请求">
+    提交创建请求；需要安全重试时可发送 `Idempotency-Key`。
+  </Step>
+  <Step title="保存任务 ID">
+    读取响应中的 `item.id`。
+  </Step>
+  <Step title="轮询任务">
+    如果 `item.status` 不是终态，轮询 `GET /jobs/{id}`。
+  </Step>
+  <Step title="读取结果">
+    当状态为 `succeeded` 时读取 `item.result` 和 `item.billing`。
+  </Step>
+</Steps>
+
+## 常见错误
+
+| HTTP | Code | 说明 |
+| --- | --- | --- |
+| `400` | `invalid_request` / 参数专用错误码 | 请求参数无效。 |
+| `401` | `api_key_missing` | 未提供 API Key。 |
+| `401` | `api_key_invalid` | API Key 无效。 |
+| `401` | `api_key_expired` | API Key 已过期。 |
+| `401` | `api_key_revoked` | API Key 已撤销。 |
+| `403` | `permission_denied` | API Key 权限不足。 |
+| `403` | `membership_tier_insufficient` / `webset_count_not_available_for_tier` | 当前会员档位未开放该能力或数量。 |
+| `404` | `task_not_found` / `webset_not_found` | 资源不存在或不属于当前用户。 |
+| `409` | `idempotency_conflict` | 幂等键被用于不同请求体。 |
+| `409` | `idempotency_key_in_progress` | 相同幂等请求仍在创建中。 |
+| `409` | `job_already_running` | 任务已经开始执行，无法保证安全取消。 |
+| `413` | `request_payload_too_large` | 请求体超过接口限制。 |
+| `429` | `api_rate_limit_exceeded` | 触发当前端点类型的账户共享限流；按 `Retry-After` 等待。 |
+| `429` | `api_key_rate_limit_exceeded` | 触发 API Key 级限流。 |
+| `503` | `task_unavailable` | 任务服务暂时不可用。 |

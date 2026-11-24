@@ -1,0 +1,119 @@
+---
+title: "Update contacts"
+description: "Replace the contacts for a table item by field key."
+api: "PATCH https://revor.ai/api/v2/websets/{websetId}/items/{itemId}/contacts/{fieldKey}"
+authMethod: "bearer"
+playground: "simple"
+keywords:
+  - "Revor AI"
+  - "API v2"
+  - "Update contacts"
+---
+
+Replace the entire contact collection for a specific table item and field key.
+
+## Overview
+
+| | |
+| --- | --- |
+| Method | `PATCH` |
+| Path | `/api/v2/websets/{websetId}/items/{itemId}/contacts/{fieldKey}` |
+| Permission | `prospects.contacts:write` |
+| Idempotency | Required via `Idempotency-Key` header |
+| Returns | Updated contact collection |
+
+## Path parameters
+
+<ParamField path="websetId" type="string" required>
+  Table UUID.
+</ParamField>
+
+<ParamField path="itemId" type="string" required>
+  Row UUID.
+</ParamField>
+
+<ParamField path="fieldKey" type="string" required>
+  Contact field key.
+</ParamField>
+
+### Supported field keys
+
+- `imported_contacts`
+- `snovio_key_contacts`
+- `company_social_contacts`
+- Custom contact column keys (discover with `/research/columns`)
+
+## Request body
+
+<ParamField body="contacts" type="object[]" required>
+  Array of contact objects.
+</ParamField>
+
+```json Request body
+{
+  "contacts": [
+    {
+      "full_name": "Alex",
+      "title": "Sales",
+      "email": ["alex@example.com"]
+    }
+  ]
+}
+```
+
+<Warning>
+  PATCH replaces the entire contact collection for that field. Pass `[]` to explicitly clear contacts. Preserve other contacts and stable `id` or `contact_key` values.
+</Warning>
+
+## Contact field formats by source
+
+<AccordionGroup>
+  <Accordion title="Snovio contacts">
+    - `email`
+    - `firstName`
+    - `lastName`
+    - `fullName`
+    - `position`
+    - `linkedin`
+    - `status`
+  </Accordion>
+
+  <Accordion title="Other sources">
+    - `id`
+    - `contact_key`
+    - `contact_kind`
+    - `full_name`
+    - `title`
+    - `company_name`
+
+    Channels support strings or arrays of strings.
+  </Accordion>
+
+  <Accordion title="Channel support by source">
+    - **imported_contacts** - `email`, `whatsapp`, `phone`, `linkedin`
+    - **website contacts** - `email`, `whatsapp`, `phone`
+    - **custom contact columns** - `email`, `whatsapp`, `phone`, `linkedin`, `facebook`, `instagram`, `custom`
+  </Accordion>
+</AccordionGroup>
+
+Unsupported fields are rejected. Read responses contain `contacts` and `channels` linked by `contact_id`.
+
+<Tip>
+  Saving contacts triggers asynchronous target pool synchronization. The sync completion time is not the same as the API response time.
+</Tip>
+
+```bash cURL
+curl -X PATCH "https://revor.ai/api/v2/websets/{websetId}/items/{itemId}/contacts/snovio_key_contacts" \
+  -H "Authorization: Bearer sk-revor-REPLACE_ME" \
+  -H "Idempotency-Key: contacts-update-001" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "contacts": [
+      {
+        "full_name": "Alex",
+        "title": "Sales",
+        "email": ["alex@example.com"]
+      }
+    ]
+  }'
+```

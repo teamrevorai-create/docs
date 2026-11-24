@@ -1,0 +1,73 @@
+---
+title: "Complete file import"
+description: "Confirm a file upload and queue the import after uploading to the signed URL."
+api: "POST https://revor.ai/api/v2/imports/{runId}/complete"
+authMethod: "bearer"
+playground: "simple"
+keywords:
+  - "Revor AI"
+  - "API v2"
+  - "Complete file import"
+---
+
+Confirm a file upload and queue the import for processing. Call this after uploading the file bytes to the signed `upload_url` returned by `POST /imports`.
+
+## Overview
+
+| | |
+| --- | --- |
+| Method | `POST` |
+| Path | `/api/v2/imports/{runId}/complete` |
+| Permission | `prospects.imports:write` |
+| Idempotency | Required via `Idempotency-Key` header |
+| Returns | Import run queued for processing |
+
+## Path parameters
+
+<ParamField path="runId" type="string" required>
+  Import run UUID returned by `POST /imports`.
+</ParamField>
+
+## Request body
+
+<ParamField body="source_kind" type="string" required>
+  File format: `"csv"` or `"xlsx"`.
+</ParamField>
+
+<ParamField body="file_name" type="string" required>
+  Name of the uploaded file.
+</ParamField>
+
+<ParamField body="declared_size_bytes" type="integer" required>
+  Size of the uploaded file in bytes.
+</ParamField>
+
+```json Request body
+{
+  "source_kind": "csv",
+  "file_name": "suppliers.csv",
+  "declared_size_bytes": 1048576
+}
+```
+
+## Behavior
+
+- This is step 3 of the file-import workflow: initialize upload, upload bytes, confirm and queue, poll progress.
+- Init and complete require separate `Idempotency-Key` values. Reuse each key for retries of the same step. Do not reuse the same key across different steps.
+- After completing, poll `GET /imports/{runId}` for progress and read `webset_ids` from the results.
+
+<Warning>
+  A timeout does not mean the task failed. Retry with the original idempotency key and unchanged request. Do not change the key and create duplicate tables.
+</Warning>
+
+```bash cURL
+curl -X POST "https://revor.ai/api/v2/imports/import-run-uuid/complete" \
+  -H "Authorization: Bearer sk-revor-REPLACE_ME" \
+  -H "Idempotency-Key: import-complete-001" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "source_kind": "csv",
+    "file_name": "suppliers.csv",
+    "declared_size_bytes": 1048576
+  }'
+```

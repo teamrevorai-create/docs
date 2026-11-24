@@ -1,0 +1,46 @@
+---
+title: "公司与人物搜索"
+sidebarTitle: "概览"
+description: "用自然语言发现公司或人物候选，返回结构化资料、相关原文片段和来源链接。"
+keywords:
+  - "Revor AI"
+  - "API v2"
+  - "公司与人物搜索"
+---
+
+用自然语言发现公司或人物候选，返回结构化资料、相关原文片段和来源链接。需要保存名单、条件评分和持续挖掘时，使用[潜客名单](/cn/api/v2/websets-create)；已知公司域名查找联系人时，使用[联系人研究](/cn/api/v2/research-contacts)。
+
+## 接口
+
+| 方法 | 路径 | 说明 |
+| --- | --- | --- |
+| `POST` | `/api/v2/search/companies` | 搜索公司候选。 |
+| `POST` | `/api/v2/search/people` | 搜索人物候选。 |
+
+<CardGroup cols={2}>
+  <Card title="搜索公司" icon="building" href="/cn/api/v2/search-companies">
+    用自然语言发现公司候选。
+  </Card>
+
+  <Card title="搜索人物" icon="user" href="/cn/api/v2/search-people">
+    用自然语言发现人物候选。
+  </Card>
+</CardGroup>
+
+## 共享概念
+
+- **权限：** 创建需要 `search:write` 和 `search:read`；读取 job 需要 `search:read`
+- **限流：** API 与 MCP 共用会员 `expensive_create` 限流
+- **并发：** 两种搜索共享搜索任务并发桶，额度采用会员研究任务并发档位
+- **幂等性：** API 使用 `Idempotency-Key` 请求头，MCP 使用 `idempotency_key` 参数。精确重试保持相同键和参数。
+- **轮询：** 可传 `Prefer: wait=20` 等待结果；终态 HTTP 200，执行中 HTTP 202，使用返回的 job ID 查询 `/api/v2/jobs/{id}`。
+- **MCP：** `revor_search_companies`、`revor_search_people` 使用相同参数并增加 `idempotency_key`。工具可能直接返回终态，否则按 `next_action` 调用 `revor_get_job`。不要重复创建任务来检查进度。
+
+## 积分
+
+| 请求数量 | 每次积分 |
+| --- | ---: |
+| 1-10 | 3 |
+| 11-25 | 8 |
+
+公司与人物同价，按请求数量档计费。成功零结果仍收费，搜索执行失败不收费；不足条数不补搜、不按条折算。详情、经历和教育字段不额外收费。幂等重放和 job 查询不重复收费，最终以 `billing.charged_credits` 为准。

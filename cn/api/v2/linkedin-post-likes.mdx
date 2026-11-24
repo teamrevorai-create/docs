@@ -1,0 +1,97 @@
+---
+title: "自动查找并点赞 LinkedIn 相关帖子"
+description: "根据提供的主题或上下文，扫描目标 LinkedIn 用户的近期帖子，自动选择一条相关帖子并点赞。调用方不需要提供帖子 URL。没有符合条件的帖子时任务会成功结束，并返回 result.status=skipped。"
+keywords: ["Revor AI", "API v2", "自动查找并点赞 LinkedIn 相关帖子"]
+api: "POST https://revor.ai/api/v2/outreach/linkedin/post-likes"
+authMethod: "bearer"
+playground: "simple"
+---
+
+根据提供的主题或上下文，扫描目标 LinkedIn 用户的近期帖子，自动选择一条相关帖子并点赞。调用方不需要提供帖子 URL。没有符合条件的帖子时任务会成功结束，并返回 `result.status=skipped`。
+
+|  |  |
+| --- | --- |
+| 方法 | `POST` |
+| 权限 | LinkedIn 互动创建 |
+| 幂等 | 可选；重试时复用相同的 `Idempotency-Key` 可避免重复 |
+| 返回 | 任务 ID |
+
+<Warning>
+  必须发送 `Authorization` 和 `Content-Type: application/json`。`Idempotency-Key` 可选；需要安全重试时建议发送并复用同一个值。
+</Warning>
+
+## Request Body
+
+<ParamField body="profile_url" type="string" required>
+  HTTPS 个人主页 URL，域名为 `linkedin.com` 或 `www.linkedin.com`，路径为 `/in/…`；不允许 URL 凭据或非标准端口。
+</ParamField>
+
+<ParamField body="content" type="string" required>
+  相关性判断主题，不是要发布或发送的正文，最多 16,000 个 UTF-8 字节。例如 `AI sales automation and outbound workflow`。
+</ParamField>
+
+<ParamField body="account_id" type="string">
+  发起点赞的 Connect 账号；存在多个可用 LinkedIn 账号时必须提供。
+</ParamField>
+
+<ParamField body="post_limit" default="20" type="number">
+  候选帖子数量，默认 20，范围 1-50。
+</ParamField>
+
+<ParamField body="locale" default="en" type="string">
+  `en` 或 `zh`。
+</ParamField>
+
+<ParamField body="min_channel_task_interval_seconds" type="number">
+  LinkedIn 渠道的最小任务间隔，范围 60-86400 秒。
+</ParamField>
+
+## 请求示例
+
+```bash cURL
+curl -X POST "https://revor.ai/api/v2/outreach/linkedin/post-likes" \
+  -H "Authorization: Bearer sk-revor-REPLACE_ME" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "account_id": "connect_account_xxx",
+    "profile_url": "https://www.linkedin.com/in/example/",
+    "content": "AI sales automation and outbound workflow",
+    "post_limit": 20,
+    "locale": "en"
+  }'
+```
+
+## 响应与结果
+
+创建接口返回 HTTP `202`，其中 `item.action` 为 `outreach.linkedin.post_like`，`item.channel` 为 `linkedin`。保存 `item.id`，然后查询：
+
+```http GET
+GET /api/v2/jobs/{id}
+```
+
+<Note>
+  没有相关帖子时，`item.result.status=skipped`，并通过 `reason` 说明原因。
+</Note>
+
+### 结果示例
+
+```json liked
+{
+  "status": "liked",
+  "liked_post": {
+    "url": "https://www.linkedin.com/posts/example_activity-123"
+  },
+  "reason": "The post matches the requested topic."
+}
+```
+
+## 常见错误
+
+| HTTP | Code | 说明 |
+| --- | --- | --- |
+| `400` | `profile_url_required` / `content_required` | 缺少目标或判断内容。 |
+| `400` | `invalid_profile_url` | `profile_url` 不是 LinkedIn 个人主页 URL。 |
+| `400` | `post_limit_invalid` / `locale_invalid` | 参数范围无效。 |
+| `403` | `permission_denied` | Key 没有 LinkedIn 互动创建权限。 |
+| `413` | `request_payload_too_large` | 请求体超过 32 KB。 |
+| `503` | `task_unavailable` | 任务暂时无法创建。 |

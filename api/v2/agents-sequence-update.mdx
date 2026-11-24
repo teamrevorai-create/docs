@@ -1,0 +1,149 @@
+---
+title: "Update sequence"
+description: "Save or disable an agent's outreach sequence."
+api: "PUT https://revor.ai/api/v2/agents/{agentId}/sequence"
+authMethod: "bearer"
+playground: "simple"
+keywords:
+  - "Revor AI"
+  - "API v2"
+  - "Update sequence"
+---
+
+Save or disable an agent's outreach sequence.
+
+## Overview
+
+|  |  |
+| --- | --- |
+| Method | `PUT` |
+| Path | `/api/v2/agents/{agentId}/sequence` |
+| Permission | `agents:write` |
+| Rate limit | `outreach_write` |
+| Returns | `item` and `result` |
+
+## Path parameter
+
+<ParamField path="agentId" type="string" required>
+  UUID of the agent with an icebreaker configuration.
+</ParamField>
+
+## Request body
+
+<ParamField body="expected_version" type="integer" required>
+  The `version` from GET. Not the agent's `updated_at`.
+</ParamField>
+
+<ParamField body="enabled" type="boolean" required>
+  `true` or `false`.
+</ParamField>
+
+<ParamField body="rounds" type="array" required>
+  1-10 follow-up rounds with `wait_days` from `1-30`.
+</ParamField>
+
+<ParamField body="rounds[].wait_days" type="integer" required>
+  Wait days. Must be in range `1-30`.
+</ParamField>
+
+<ParamField body="rounds[].strategy_key" type="string" required>
+  One of: `value_add`, `new_angle`, `evidence`, `share_resource`, `address_concern`, `next_step`, `right_person`, `graceful_close`, `custom`.
+</ParamField>
+
+<ParamField body="rounds[].content_generation_mode" type="string" required>
+  `ai_personalized` or `fixed_template`.
+</ParamField>
+
+<ParamField body="rounds[].content_input" type="string">
+  Content input. Can also supply separate `ai_content`/`fixed_content` drafts.
+</ParamField>
+
+<ParamField body="rounds[].attachment_mode" type="string">
+  `none`, `reuse`, or `custom`.
+</ParamField>
+
+<ParamField body="rounds[].preview_research_enabled" type="boolean">
+  Controls previews only.
+</ParamField>
+
+<ParamField body="research_activation_version" type="integer">
+  Explicitly include `1` to authorize paid research in actual sending for submitted round toggles. Omitting preserves existing live authorization.
+</ParamField>
+
+```bash cURL
+curl -X PUT "https://revor.ai/api/v2/agents/{agentId}/sequence" \
+  -H "Authorization: Bearer sk-revor-REPLACE_ME" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "expected_version": 0,
+    "enabled": true,
+    "rounds": [
+      {
+        "wait_days": 3,
+        "strategy_key": "value_add",
+        "content_generation_mode": "ai_personalized",
+        "content_input": "Share an application example and offer samples",
+        "preview_research_enabled": false,
+        "attachment_mode": "none"
+      }
+    ]
+  }'
+```
+
+## Response
+
+```json 200
+{
+  "ok": true,
+  "request_id": "req_xxx",
+  "item": {
+    "enabled": true,
+    "version": 1
+  },
+  "result": "published"
+}
+```
+
+### Round content limits
+
+- Supply `1-10` follow-up rounds with `wait_days` from `1-30`.
+- Use `content_input` or separate `ai_content`/`fixed_content` drafts. When either draft is supplied, the selected mode uses its corresponding draft.
+- Content is limited to `16,000` characters.
+- Optional fields include `goal_type` and `supplementary_instruction`.
+
+### Attachments
+
+- `reuse` selects existing first-touch attachments.
+- `custom` attachments must exactly match the agent's uploaded `file_name`/`file_url`/`mime_type`/`size_bytes`.
+- At most three files totaling `5 MB`. Uploads are not provided here.
+
+### WhatsApp templates
+
+Meta WhatsApp rounds can specify `waba_template_binding_id` and `waba_template_connect_account_id`. The service checks ownership, purpose, and `APPROVED` status. Client-supplied template names are rejected.
+
+### Behavior
+
+- PUT replaces all follow-up rounds using the independent `expected_version` from GET, not the agent's `updated_at`.
+- To disable, submit `enabled: false` with the existing editable rounds, not an empty array.
+- Remove read-only fields before writing GET results back.
+- Stale versions return `409` `agent_sequence_config_conflict`. Reread before updating.
+
+### Save response
+
+PUT returns `item` and `result` (`published`/`existing`).
+
+<Warning>
+  Publishing synchronizes linked plans in the background and can admit historical first touches under existing rules. Disabling stops future sequence work; sent facts remain unchanged. A successful save does not mean every plan has synchronized or every in-flight send was recalled. This is a configuration publication, not a side-effect-free draft save.
+</Warning>
+
+## Errors
+
+| HTTP | Code | Meaning |
+| --- | --- | --- |
+| `400` | `agent_input_invalid` | Request does not match the contract |
+| `400` | `agent_configuration_invalid` | Violates business validation rules |
+| `403` | `permission_denied` | Missing required permission |
+| `404` | `agent_not_found` | Agent does not exist, was deleted, or belongs to another user |
+| `404` | `agent_sequence_unavailable` | Feature not enabled for this agent |
+| `409` | `agent_sequence_config_conflict` | Version expired or concurrent modification |
+| `500` | `agent_operation_failed` | Operation failed. Read current state before retrying |

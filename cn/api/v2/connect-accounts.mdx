@@ -1,0 +1,78 @@
+---
+title: "查询 Connect 账号"
+description: "返回当前用户已连接的 Email、LinkedIn 和 WhatsApp 账号。创建触达任务前，先通过本接口取得可用的 account_id。"
+keywords: ["Revor AI", "API v2", "查询 Connect 账号"]
+api: "GET https://revor.ai/api/v2/connect/accounts"
+authMethod: "bearer"
+playground: "simple"
+---
+
+返回当前用户已连接的 Email、LinkedIn 和 WhatsApp 账号。创建触达任务前，先通过本接口取得可用的 `account_id`。
+
+|  |  |
+| --- | --- |
+| 方法 | `GET` |
+| 权限 | Connect 账号读取 |
+| 限流 | 标准限流 |
+
+## Query 参数
+
+<ParamField query="channel" type="string">
+  `email`、`linkedin` 或 `whatsapp`。
+</ParamField>
+
+<ParamField query="can_send" type="string">
+  `true`、`false`、`1` 或 `0`。
+</ParamField>
+
+## 请求示例
+
+```bash cURL
+curl --get \
+  --url "https://revor.ai/api/v2/connect/accounts" \
+  --header "Authorization: Bearer sk-revor-REPLACE_ME" \
+  --data-urlencode "channel=linkedin" \
+  --data-urlencode "can_send=true"
+```
+
+## 响应示例
+
+```json 200
+{
+  "ok": true,
+  "request_id": "req_xxx",
+  "items": [
+    {
+      "account_id": "connect_account_xxx",
+      "channel": "linkedin",
+      "name": "LinkedIn Account",
+      "account_identifier": "https://www.linkedin.com/in/example/",
+      "status": "ok",
+      "lifecycle_status": "active",
+      "can_send": true,
+      "can_receive": true
+    }
+  ]
+}
+```
+
+## 响应字段说明
+
+- `status`：表示当前连接或凭证是否健康。
+- `lifecycle_status`：表示账号在 Revor 中的生命周期。
+
+<Warning>
+  调用方不应自行组合这两个内部状态来判断能否发送；发起外联时始终以 `can_send=true` 为准。
+</Warning>
+
+<Note>
+  常见情况下，`status=credentials` 表示账号需要更新凭证或重新连接，`status=error` 表示账号暂不可用。即使账号仍处于 `lifecycle_status=active`，只要 `can_send=false`，也不应提交发送任务。
+</Note>
+
+## 常见错误
+
+| HTTP | Code | 说明 |
+| --- | --- | --- |
+| `400` | `invalid_channel` | 渠道值不支持。 |
+| `400` | `invalid_can_send` | `can_send` 值不支持。 |
+| `403` | `permission_denied` | Key 没有 Connect 账号读取权限。 |

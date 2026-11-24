@@ -1,0 +1,309 @@
+---
+title: "Get started"
+description: "Revor AI API v2 provides prospect discovery, public-web and contact search, customs trade data, Connect account lookup, and one-off outreach. Long-running operations use asynchronous jobs: submit a request, then retrieve its result through the unified jobs endpoint."
+keywords: ["Revor AI", "API v2", "Get started"]
+---
+
+Revor AI API v2 provides prospect discovery, public-web and contact search, customs trade data, Connect account lookup, and one-off outreach. Long-running operations use asynchronous jobs: submit a request, then retrieve its result through the unified jobs endpoint.
+
+## Make your first request
+
+Create an API key on the [API keys page](https://revor.ai/my-api-keys), then check your credit balance to verify authentication and account status:
+
+```bash cURL
+curl "https://revor.ai/api/v2/credits" \
+  -H "Authorization: Bearer sk-revor-REPLACE_ME"
+```
+
+## Choose a capability
+
+| Goal | Capability | Start here |
+| --- | --- | --- |
+| Find companies or people from natural-language criteria | Prospect discovery | `POST /prospect-lists` |
+| Search public-web information about a company | Public-web search | `POST /research/public-web` |
+| Find contacts from an official company domain | Company-contact search | `POST /research/contacts` |
+| Discover importers or exporters by product and country | Customs trade data | `POST /customs/companies/search` |
+| Analyze imports, exports, counterparties, and trends for a known company | Customs trade data | `POST /customs/company-candidates` |
+| Send Email, LinkedIn, or WhatsApp outreach | One-off outreach | Call `GET /connect/accounts` first |
+| Find and like a relevant LinkedIn post | LinkedIn smart like | `POST /outreach/linkedin/post-likes` |
+
+Current paths and fields use `websets` / `webset` for prospect discovery. A webset is a prospect list that is generated over time and can be read page by page; callers do not need to know its internal implementation.
+
+## Base URL
+
+```api
+https://revor.ai/api/v2
+```
+
+API v1 Connect and Outreach endpoints remain temporarily compatible. Both versions can use the same API key, but new integrations should use v2 paths and ensure the key has the corresponding permissions.
+
+## Authentication
+
+Use the `Authorization: Bearer` header:
+
+```bash Bearer header
+curl "https://revor.ai/api/v2/credits" \
+  -H "Authorization: Bearer sk-revor-REPLACE_ME"
+```
+
+You may also use `x-api-key`:
+
+```bash x-api-key header
+curl "https://revor.ai/api/v2/credits" \
+  -H "x-api-key: sk-revor-REPLACE_ME"
+```
+
+<Warning>
+  Never put an API key in a URL, frontend code, public repository, or log.
+</Warning>
+
+## Membership limits and concurrency
+
+The API and MCP share account-wide allowances. Multiple API keys or protocols do not receive separate allowances.
+
+Normal reads, job polling, data-task creation, and outreach actions have separate request limits. Credits, requests per minute, and active-job concurrency are independent controls. See [Rate limits, concurrency, and retries](/api/v2/rate-limits) for plan limits, headers, errors, and retry behavior.
+
+## Common response format
+
+Successful responses contain `ok: true` and `request_id`. Lists generally return `items`; single resources and asynchronous jobs generally return `item`.
+
+<CodeGroup>
+
+```json Success
+{
+  "ok": true,
+  "request_id": "req_xxx",
+  "item": {}
+}
+```
+
+```json Error
+{
+  "ok": false,
+  "error": {
+    "code": "invalid_request",
+    "message": "invalid_request",
+    "request_id": "req_xxx"
+  }
+}
+```
+
+</CodeGroup>
+
+Error responses contain a stable public error code. Keep `request_id` when contacting support or troubleshooting.
+
+## Idempotency keys
+
+`Idempotency-Key` is an optional reliable-retry mechanism. Ordinary requests can omit it. If a caller may retry automatically after a network timeout, generate a unique value for the same business operation:
+
+```http Idempotency-Key header
+Idempotency-Key: 2d1ed06a-4e63-4e36-9e88-53784bb61b0b
+```
+
+- Same path, key, and body: returns the first result without creating a duplicate job.
+- Same path and key with a different body: returns `409`.
+- Generate a new key for a genuinely new operation; reuse the original key after a network timeout.
+- Without a key, every `POST` is independent. Duplicate submissions may create, run, and bill multiple jobs.
+
+Exception: `POST /prospect-lists/{id}/expand` requires `Idempotency-Key` and returns `400 idempotency_key_required` when it is missing.
+
+## Asynchronous jobs and Prefer wait
+
+Research and customs endpoints normally return HTTP `202 Accepted`. Save `item.id`, then poll:
+
+```http GET /api/v2/jobs/{id}
+GET /api/v2/jobs/{id}
+```
+
+To wait briefly during creation, include:
+
+```http Prefer header
+Prefer: wait=20
+```
+
+If the job finishes during the wait window, the creation endpoint returns HTTP `200` with the terminal job. Otherwise it still returns HTTP `202`. A wait timeout does not mean the job failed; continue polling its ID.
+
+<Note>
+  A wait timeout does not mean the job failed. Continue polling the job ID.
+</Note>
+
+### Job status versus business-resource status
+
+Jobs and prospect lists have separate statuses:
+
+```text
+POST /prospect-lists
+  ├─ preparation_job: queued - running - succeeded
+  └─ prospect list: generating_criteria - searching - verifying - completed
+```
+
+The job reports whether one asynchronous operation finished. The prospect-list status reports the stage of discovery. Therefore, `preparation_job.status=succeeded` only means the list started successfully, not that discovery is complete.
+
+## Endpoint reference
+
+| Capability | Method and path | Description |
+| --- | --- | --- |
+| Connect | `GET /api/v2/connect/accounts` | List connected accounts available for outreach. |
+| Outreach | `POST /api/v2/outreach/dispatches` | Send one Email, LinkedIn, or WhatsApp outreach action. |
+| Outreach | `POST /api/v2/outreach/linkedin/post-likes` | Find and like one relevant LinkedIn post. |
+| Credits | `GET /api/v2/credits` | Get currently available credits. |
+| Prospect discovery | `GET /api/v2/prospect-lists` | Page through prospect lists. |
+| Prospect discovery | `POST /api/v2/prospect-lists` | Create a company or person prospect list within plan limits. |
+| Prospect discovery | `GET /api/v2/prospect-lists/{id}` | Get list-generation progress. |
+| Prospect discovery | `GET /api/v2/prospect-lists/{id}/search-plan` | Get discovery criteria and search strategy. |
+| Prospect discovery | `GET /api/v2/prospect-lists/{id}/prospects` | Page through matching companies or people. |
+| Prospect discovery | `GET /api/v2/prospect-lists/{id}/prospects/stream` | Stream list status, strategy, and item changes. |
+| Prospect discovery | `POST /api/v2/prospect-lists/{id}/expand` | Continue discovery on an existing list. |
+| Prospect discovery | `GET /api/v2/prospect-lists/{id}/expand/stream` | Stream one specific Find More operation. |
+| Jobs | `GET /api/v2/jobs/{id}` | Get outreach, research, customs, or list-preparation jobs. |
+| Jobs | `POST /api/v2/jobs/{id}/cancel` | Cancel a job that has not started. |
+| Research | `POST /api/v2/research/public-web` | Search public-web sources. |
+| Search | `POST /api/v2/search/companies` | Discover company candidates with structured profiles and source evidence. |
+| Search | `POST /api/v2/search/people` | Discover people candidates with professional profiles and source evidence. |
+| Research | `POST /api/v2/research/contacts` | Search contacts by official company domain. |
+| Customs | `POST /api/v2/customs/company-candidates` | Resolve queryable company-name candidates. |
+| Customs | `POST /api/v2/customs/companies/search` | Discover importers or exporters by product, country, and date. |
+| Customs | `POST /api/v2/customs/trade-reports` | Generate a complete trade report in one job. |
+| Customs | `POST /api/v2/customs/counterparties` | Get major counterparties. |
+| Customs | `POST /api/v2/customs/categories` | Get major product categories. |
+| Customs | `POST /api/v2/customs/trends` | Get trade trends. |
+| Customs | `POST /api/v2/customs/countries` | Get trade-country distribution. |
+
+## Detailed documentation
+
+<CardGroup cols={2}>
+  <Card title="Credit balance" icon="coins" href="/api/v2/credits">
+  </Card>
+
+  <Card title="Rate limits, concurrency, and retries" icon="gauge" href="/api/v2/rate-limits">
+  </Card>
+
+  <Card title="Connect accounts" icon="key" href="/api/v2/connect-accounts">
+  </Card>
+
+  <Card title="Send one outreach message" icon="send" href="/api/v2/outreach-dispatches">
+  </Card>
+
+  <Card title="Find and like a LinkedIn post" icon="thumbs-up" href="/api/v2/linkedin-post-likes">
+  </Card>
+
+  <Card title="Asynchronous jobs" icon="clock" href="/api/v2/jobs">
+  </Card>
+
+  <Card title="Prospect discovery" icon="search" href="/api/v2/targets">
+  </Card>
+
+  <Card title="Create a prospect list" icon="plus" href="/api/v2/websets-create">
+  </Card>
+
+  <Card title="List prospect lists" icon="list" href="/api/v2/websets-list">
+  </Card>
+
+  <Card title="Get a prospect list" icon="file" href="/api/v2/websets-detail">
+  </Card>
+
+  <Card title="Get discovery criteria and strategy" icon="search" href="/api/v2/websets-strategy">
+  </Card>
+
+  <Card title="List prospect items" icon="list" href="/api/v2/websets-items">
+  </Card>
+
+  <Card title="Stream prospect items" icon="radio" href="/api/v2/websets-items-stream">
+  </Card>
+
+  <Card title="Find more prospects" icon="plus" href="/api/v2/websets-find-more">
+  </Card>
+
+  <Card title="Stream a Find More operation" icon="radio" href="/api/v2/websets-find-more-stream">
+  </Card>
+
+  <Card title="Public-web and company-contact search" icon="globe" href="/api/v2/research">
+  </Card>
+
+  <Card title="Company and people search" icon="search" href="/api/v2/search">
+  </Card>
+
+  <Card title="Customs trade data" icon="ship" href="/api/v2/customs">
+  </Card>
+</CardGroup>
+
+## Country-code formats
+
+Country-code length depends on the capability. `research.public-web` uses an ISO 3166-1 alpha-2 `user_location`, such as `US`. Every customs country filter uses ISO 3166-1 alpha-3, such as `USA`, `CHN`, or `RUS`. Do not interchange the two formats; a syntactically valid code of the wrong length will not express the intended filter.
+
+## Recommended workflows
+
+### One-off outreach
+
+<Steps>
+  <Step title="Select an account">
+    Call `GET /connect/accounts?can_send=true` and select an `account_id`.
+  </Step>
+  <Step title="Send the outreach">
+    Call `POST /outreach/dispatches` or the LinkedIn-like endpoint. Send `Idempotency-Key` when safe retries are needed.
+  </Step>
+  <Step title="Poll the job">
+    Save `item.id` and poll `GET /jobs/{id}`.
+  </Step>
+  <Step title="Read the result">
+    For `succeeded`, read `item.result`; for `failed`, read `item.error.code`.
+  </Step>
+</Steps>
+
+### Prospect discovery
+
+<Steps>
+  <Step title="Check credits">
+    Call `GET /credits` to confirm available credits.
+  </Step>
+  <Step title="Create a prospect list">
+    Call `POST /prospect-lists`, then save `webset.id`.
+  </Step>
+  <Step title="Get a snapshot">
+    Call `GET /prospect-lists/{id}/prospects?detail=compact&limit=10` for a snapshot and checkpoint.
+  </Step>
+  <Step title="Stream results">
+    Open `GET /prospect-lists/{id}/prospects/stream`, apply item and state changes, and stop on `complete`.
+  </Step>
+</Steps>
+
+<Note>
+  `preparation_job.id` only confirms whether the list started; it does not mean prospect discovery is complete.
+</Note>
+
+### Research and customs jobs
+
+<Steps>
+  <Step title="Submit the creation request">
+    Submit the creation request, using `Idempotency-Key` if safe retries are needed.
+  </Step>
+  <Step title="Save the job ID">
+    Read `item.id`.
+  </Step>
+  <Step title="Poll if needed">
+    If `item.status` is not terminal, poll `GET /jobs/{id}`.
+  </Step>
+  <Step title="Read the result">
+    On `succeeded`, read `item.result` and `item.billing`.
+  </Step>
+</Steps>
+
+## Common errors
+
+| HTTP | Code | Description |
+| --- | --- | --- |
+| `400` | `invalid_request` / endpoint-specific code | Invalid request parameters. |
+| `401` | `api_key_missing` | No API key was provided. |
+| `401` | `api_key_invalid` | The API key is invalid. |
+| `401` | `api_key_expired` | The API key has expired. |
+| `401` | `api_key_revoked` | The API key was revoked. |
+| `403` | `permission_denied` | The API key lacks permission. |
+| `403` | `membership_tier_insufficient` / `webset_count_not_available_for_tier` | The capability or requested count is unavailable on the current plan. |
+| `404` | `task_not_found` / `webset_not_found` | The resource does not exist or belongs to another user. |
+| `409` | `idempotency_conflict` | The idempotency key was reused with another body. |
+| `409` | `idempotency_key_in_progress` | The identical idempotent request is still being created. |
+| `409` | `job_already_running` | The job has started and cannot be safely cancelled. |
+| `413` | `request_payload_too_large` | The request body exceeds the endpoint limit. |
+| `429` | `api_rate_limit_exceeded` | The shared account limit for this endpoint type was reached; wait for `Retry-After`. |
+| `429` | `api_key_rate_limit_exceeded` | The API-key-level limit was reached. |
+| `503` | `task_unavailable` | The job service is temporarily unavailable. |

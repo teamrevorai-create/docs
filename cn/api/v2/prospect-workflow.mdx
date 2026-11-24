@@ -1,0 +1,117 @@
+---
+title: "表格导入、智能调研与智能触达"
+sidebarTitle: "导入、调研与触达流程"
+description: "所有请求使用 Authorization: Bearer API_KEY。新增能力沿用用户默认滚动权限集；只读 Key 仅获得对应 read 权限。受限 Key 需明确授予下表权限，已有单条触达权限不等于智能触达计划写权限。"
+keywords:
+  - "Revor AI"
+  - "API v2"
+  - "表格导入、智能调研与智能触达"
+---
+
+所有请求使用 `Authorization: Bearer <API_KEY>`。新增能力沿用用户默认滚动权限集；只读 Key 仅获得对应 `read` 权限。受限 Key 需明确授予下表权限，已有单条触达权限不等于智能触达计划写权限。
+
+## 权限
+
+| 功能 | 路径（前缀 `/api/v2`） | 权限 |
+| --- | --- | --- |
+| 直接导入数据或申请文件上传 | [`POST /imports`](/cn/api/v2/workflow-imports-create) | `prospects.imports:write` |
+| 确认上传并入队 | [`POST /imports/{runId}/complete`](/cn/api/v2/workflow-imports-complete) | `prospects.imports:write` |
+| 导入进度 | [`GET /imports/{runId}`](/cn/api/v2/workflow-imports-get) | `prospects.imports:read` |
+| 已有调研列 | [`GET /websets/{websetId}/research/columns`](/cn/api/v2/workflow-research-columns) | `websets.research:read` |
+| 启动整表或选中行调研 | [`POST /websets/{websetId}/research/runs`](/cn/api/v2/workflow-research-start) | `websets.research:write` |
+| 调研进度/结果 | [`GET /websets/{websetId}/research/runs/{runId}`](/cn/api/v2/workflow-research-get) | `websets.research:read` |
+| 联系人集合 | [`GET / PATCH /websets/{websetId}/items/{itemId}/contacts/{fieldKey}`](/cn/api/v2/workflow-contacts-get) | `prospects.contacts:read / write` |
+| 当前触达配置与归属 | [`GET /websets/{websetId}/smart-outreach`](/cn/api/v2/workflow-outreach-get) | `outreach.plans:read` |
+| 启动/停止触达 | [`POST /websets/{websetId}/smart-outreach/start`](/cn/api/v2/workflow-outreach-start)、[`/stop`](/cn/api/v2/workflow-outreach-stop) | `outreach.plans:write` |
+| 批量行状态 | [`POST /websets/{websetId}/smart-outreach/statuses`](/cn/api/v2/workflow-outreach-statuses) | `outreach.plans:read` |
+| 单行目标详情 | [`GET /websets/{websetId}/smart-outreach/items/{itemId}?channel=email`](/cn/api/v2/workflow-outreach-item) | `outreach.plans:read` |
+| 待发送草稿 | [`GET / PATCH /websets/{websetId}/smart-outreach/drafts/{targetId}`](/cn/api/v2/workflow-outreach-draft-get) | `outreach.plans:read / write` |
+
+所有 `websetId` 是公共表格 `id`，`itemId` 是公共行列表返回的 `id`（UUID），不是 provider 内部行 ID。智能体创建和绑定见 [智能体配置](/cn/api/v2/agents)。表格列表和行读取继续复用 `/websets`、`/websets/{id}/items`。
+
+## 文件导入流程
+
+CSV 或 XLSX 文件最大 10 MiB，按以下步骤操作：
+
+<Steps>
+  <Step title="申请上传">
+    调用 [`POST /imports`](/cn/api/v2/workflow-imports-create)，body 包含 `file_name`、`content_type`、`size_bytes` 和可选 `locale`。返回导入任务 ID、目标表格 ID、签名上传地址、上传方法和过期秒数。
+  </Step>
+  <Step title="上传文件">
+    按返回 method（`PUT`）向 `upload_url` 上传文件原始字节。API Key 只发给 Revor API，不发给存储上传地址。
+  </Step>
+  <Step title="确认并入队">
+    调用 [`POST /imports/{runId}/complete`](/cn/api/v2/workflow-imports-complete)，body 包含 `source_kind`、`file_name` 和 `declared_size_bytes`。
+  </Step>
+  <Step title="查询进度">
+    调用 [`GET /imports/{runId}`](/cn/api/v2/workflow-imports-get)，使用返回的 `webset_ids` 读取结果。
+  </Step>
+</Steps>
+
+<Warning>
+  `init` 和 `complete` 均使用 `Idempotency-Key`；每个步骤使用不同键，同一步骤重试保留原键。不要跨步骤复用同一个幂等键。
+</Warning>
+
+## 端点卡片
+
+<CardGroup cols={2}>
+  <Card title="创建导入任务" icon="upload" href="/cn/api/v2/workflow-imports-create">
+    直接导入数据或申请文件上传
+  </Card>
+
+  <Card title="确认文件上传并入队" icon="check" href="/cn/api/v2/workflow-imports-complete">
+    通知系统文件已上传完毕并开始处理
+  </Card>
+
+  <Card title="查询导入进度" icon="chart-line" href="/cn/api/v2/workflow-imports-get">
+    获取导入任务的状态、进度和结果统计
+  </Card>
+
+  <Card title="获取已有调研列" icon="table" href="/cn/api/v2/workflow-research-columns">
+    列出表格上的调研列
+  </Card>
+
+  <Card title="启动智能调研" icon="play" href="/cn/api/v2/workflow-research-start">
+    在表格上启动整表或选中行调研
+  </Card>
+
+  <Card title="查询调研进度与结果" icon="magnifying-glass" href="/cn/api/v2/workflow-research-get">
+    获取调研任务的进度或当前有效结果
+  </Card>
+
+  <Card title="读取联系人集合" icon="users" href="/cn/api/v2/workflow-contacts-get">
+    获取指定行指定列的联系人集合
+  </Card>
+
+  <Card title="修改联系人集合" icon="pen" href="/cn/api/v2/workflow-contacts-update">
+    整体替换指定行指定列的联系人集合
+  </Card>
+
+  <Card title="读取触达配置与归属" icon="gear" href="/cn/api/v2/workflow-outreach-get">
+    获取表格的触达配置与归属信息
+  </Card>
+
+  <Card title="启动智能触达" icon="paper-plane" href="/cn/api/v2/workflow-outreach-start">
+    为选中行启动智能触达计划
+  </Card>
+
+  <Card title="停止智能触达" icon="stop" href="/cn/api/v2/workflow-outreach-stop">
+    停止表格的智能触达计划
+  </Card>
+
+  <Card title="批量查询触达状态" icon="list-check" href="/cn/api/v2/workflow-outreach-statuses">
+    批量查询指定行的触达投递状态
+  </Card>
+
+  <Card title="读取单行目标详情" icon="crosshairs" href="/cn/api/v2/workflow-outreach-item">
+    获取指定行的触达目标详情
+  </Card>
+
+  <Card title="读取待发送草稿" icon="file" href="/cn/api/v2/workflow-outreach-draft-get">
+    获取指定目标的待发送触达草稿
+  </Card>
+
+  <Card title="修改待发送草稿" icon="pen-to-square" href="/cn/api/v2/workflow-outreach-draft-update">
+    更新待发送触达草稿内容和排期
+  </Card>
+</CardGroup>

@@ -1,0 +1,29 @@
+---
+title: "Public-web and company-contact search"
+description: "This page covers two independent capabilities: searching public-web sources by query and finding company contacts by official domain. These endpoints do not automatically create a comprehensive company report covering every dimension such as financials and competitors."
+keywords: ["Revor AI", "API v2", "Public-web and company-contact search"]
+sidebarTitle: "Overview"
+---
+
+This page covers two independent capabilities: searching public-web sources by query and finding company contacts by official domain. These endpoints do not automatically create a comprehensive company report covering every dimension such as financials and competitors.
+
+Both endpoints create asynchronous jobs and return results on the job object. `Idempotency-Key` is optional; send and reuse it when safe retries are required.
+
+You may send `Prefer: wait=20`. If the job finishes during the wait window, the endpoint returns HTTP `200`; otherwise it returns HTTP `202`, and the caller continues polling `/api/v2/jobs/{id}`.
+
+## Endpoints
+
+| Method | Path | Description |
+| --- | --- | --- |
+| `POST` | `/api/v2/research/public-web` | Search public-web sources by query. |
+| `POST` | `/api/v2/research/contacts` | Search for contacts by verified company domain. |
+
+<CardGroup cols={2}>
+  <Card title="Research public web" icon="globe" href="/api/v2/research-public-web">
+    Search public-web sources by query and return summaries.
+  </Card>
+
+  <Card title="Research company contacts" icon="address-book" href="/api/v2/research-contacts">
+    Find contacts by verified official company domain.
+  </Card>
+</CardGroup>

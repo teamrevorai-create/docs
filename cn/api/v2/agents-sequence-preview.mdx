@@ -1,0 +1,175 @@
+---
+title: "预览多轮消息"
+description: "按轮次预览多轮触达的消息内容，付费生成。"
+api: "POST https://revor.ai/api/v2/agents/{agentId}/sequence/preview"
+authMethod: "bearer"
+playground: "simple"
+keywords:
+  - "Revor AI"
+  - "API v2"
+  - "预览多轮消息"
+---
+
+先保存并启用多轮触达配置后再调用，按轮次预览消息内容。付费生成，返回公共 job。
+
+## 接口概览
+
+|  |  |
+| --- | --- |
+| 方法 | `POST` |
+| 路径 | `/api/v2/agents/{agentId}/sequence/preview` |
+| 权限 | `agents:write` |
+| 幂等性 | 需要 `Idempotency-Key` |
+| 限流桶 | `expensive_create` |
+| 返回 | 公共 job，通过 `GET /api/v2/jobs/{id}` 查询 |
+
+## 路径参数
+
+<ParamField path="agentId" type="string" required>
+  智能体 UUID。仅限 icebreaker 智能体。
+</ParamField>
+
+## 请求体
+
+<ParamField body="config_version" type="integer" required>
+  必须等于多轮当前版本（`GET` 返回的 `version`）。
+</ParamField>
+
+<ParamField body="round_no" type="integer" required>
+  要预览的轮次号。
+</ParamField>
+
+<ParamField body="channel" type="string" required>
+  支持 `email`、`linkedin`、`whatsapp`。
+</ParamField>
+
+<ParamField body="locale" type="string">
+  默认 `en`。
+</ParamField>
+
+<ParamField body="first_touch_subject" type="string">
+  首轮预览邮件主题（仅邮件渠道）。
+</ParamField>
+
+<ParamField body="first_touch_text" type="string" required>
+  首轮预览正文。作为首次触达的上下文。
+</ParamField>
+
+<ParamField body="recipient_name" type="string" required>
+  收件人姓名。
+</ParamField>
+
+<ParamField body="recipient_company" type="string" required>
+  收件人公司名。
+</ParamField>
+
+<ParamField body="recipient_title" type="string">
+  收件人职位。
+</ParamField>
+
+<ParamField body="recipient_company_detail" type="string">
+  公司补充信息。
+</ParamField>
+
+<ParamField body="lead_cursor" type="string">
+  现有关联联系人的 cursor。
+</ParamField>
+
+<ParamField body="research" type="boolean">
+  `true` 要求该轮 `preview_research_enabled=true` 并提供研究 run 引用。
+</ParamField>
+
+<ParamField body="prior_preview_messages" type="array" required>
+  按轮次严格递增，每项为 `round_no`、`subject`（可空）、`body`，仅可包含当前轮之前的跟进预览。
+</ParamField>
+
+```bash cURL
+curl -X POST "https://revor.ai/api/v2/agents/{agentId}/sequence/preview" \
+  -H "Authorization: Bearer sk-revor-REPLACE_ME" \
+  -H "Idempotency-Key: agent-sequence-preview-001" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "config_version": 1,
+    "round_no": 2,
+    "channel": "email",
+    "locale": "zh",
+    "research": false,
+    "first_touch_subject": "合作交流",
+    "first_touch_text": "此前的首轮预览正文",
+    "recipient_name": "Alice",
+    "recipient_company": "Example Manufacturing",
+    "prior_preview_messages": []
+  }'
+```
+
+```json 请求体
+{
+  "config_version": 1,
+  "round_no": 2,
+  "channel": "email",
+  "locale": "zh",
+  "research": false,
+  "first_touch_subject": "合作交流",
+  "first_touch_text": "此前的首轮预览正文",
+  "recipient_name": "Alice",
+  "recipient_company": "Example Manufacturing",
+  "prior_preview_messages": []
+}
+```
+
+## 响应
+
+```json 202
+{
+  "ok": true,
+  "request_id": "req_xxx",
+  "item": {
+    "id": "job-uuid",
+    "status": "queued",
+    "type": "agent_sequence_preview"
+  }
+}
+```
+
+## 研究预览
+
+`research=true` 要求该轮 `preview_research_enabled=true`，并提供以下之一:
+
+- `first_touch_run_id`（已有首轮研究 run）
+- `preview_thread_id`（客户端为此预览线程生成的 UUID）
+
+还可提供 `previous_run_id` 引用最近前轮研究。run ID 是预览结果的 `research_run_id`，不是公共 job ID。
+
+复用线程时保持相同 thread ID；用户、智能体、客户与引用的首轮/前轮正文必须匹配。普通预览不接受研究 run 引用。Meta 已批准模板直接预览模板，不支持叠加研究。
+
+## 计费
+
+- 普通预览消费一次普通触达额度。
+- 研究预览消费一次研究触达额度，不叠扣。
+- 结果包含 `messages`、`agent_id`、`agent_version`、`config_version`、`round_no`、`research_run_id` 和账务结果。
+- 冻结输入后重试复用原配置。
+- 明确失败退款，未知结果保留账务恢复，不重新调用模型。
+- 取消仅允许首次执行前。
+
+## 行为说明
+
+- 先保存并启用多轮配置。
+- 通过 `GET /api/v2/jobs/{id}`（`agents:read`）读取结果。
+- 门禁与配置读取一致，使用既有环境变量。
+
+<Note>
+  多轮能力需要同步更新 Web 与 Smart Outreach worker，无新增 schema 或 env；上述门禁使用既有环境变量。
+</Note>
+
+## 错误码
+
+| HTTP | 错误码 | 含义 |
+| --- | --- | --- |
+| `400` | `agent_input_invalid` | 参数错误 |
+| `403` | `permission_denied` | 缺少 `agents:write` |
+| `404` | `agent_not_found` | 智能体不存在 |
+| `404` | `agent_sequence_unavailable` | 多轮触达未开放 |
+
+## MCP 工具
+
+`revor_preview_agent_sequence`

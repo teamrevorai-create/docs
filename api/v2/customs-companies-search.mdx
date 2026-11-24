@@ -1,0 +1,107 @@
+---
+title: "Discover companies by trade"
+description: "Find importers or exporters from product, country, and date criteria in trade records."
+api: "POST https://revor.ai/api/v2/customs/companies/search"
+authMethod: "bearer"
+playground: "simple"
+keywords:
+  - "Revor AI"
+  - "API v2"
+  - "Discover companies by trade"
+---
+
+Find importers or exporters from product, country, and date criteria in trade records. No company name is required.
+
+## At a glance
+
+|  |  |
+| --- | --- |
+| Method | `POST` |
+| Path | `/api/v2/customs/companies/search` |
+| Returns | List of companies matching the market filters |
+| Idempotency | Supported |
+
+## Request
+
+### Parameters
+
+<ParamField body="company_role" type="string" required>
+  Returned company role: `importer` for buyers/importers or `exporter` for suppliers/exporters.
+</ParamField>
+
+<ParamField body="catalog" type="string">
+  `imports` or `exports`; defaults to the common catalog for the selected role.
+</ParamField>
+
+<ParamField body="start_date" type="date" required>
+  `YYYY-MM-DD`.
+</ParamField>
+
+<ParamField body="end_date" type="date" required>
+  `YYYY-MM-DD`; maximum range is one year.
+</ParamField>
+
+<ParamField body="hs_code" type="string">
+  One 2, 4, 6, 8, or 10 digit code, such as `84` for machinery or `8429` for excavators. Comma- or whitespace-separated values and ranges such as `84-85` are unsupported; query multiple categories separately.
+</ParamField>
+
+<ParamField body="product_description" type="string">
+  Product keywords, useful when an exact HS Code is unavailable.
+</ParamField>
+
+<ParamField body="origin_country_code" type="string">
+  Origin country code, such as `CHN`.
+</ParamField>
+
+<ParamField body="destination_country_code" type="string">
+  Destination market code, such as `RUS`, `BRA`, `SAU`, or `ARE`.
+</ParamField>
+
+<ParamField body="page" default="1" type="integer">
+  1-1000; default 1.
+</ParamField>
+
+<ParamField body="page_size" default="20" type="integer">
+  1-20; default 20.
+</ParamField>
+
+<ParamField body="sort_by" default="trade_count" type="string">
+  `trade_count`, `amount_usd`, `quantity`, or `weight`; default `trade_count`.
+</ParamField>
+
+<ParamField body="sort_order" default="desc" type="string">
+  `asc` or `desc`; default `desc`.
+</ParamField>
+
+<Warning>
+  Provide at least one of `hs_code`, `product_description`, `origin_country_code`, and `destination_country_code` to avoid an unscoped full-dataset query. Industry names are not a uniform customs classification; broad requests such as "machinery industry" should first be expressed as an appropriate HS Code or product keyword.
+</Warning>
+
+### Example request
+
+```bash cURL
+curl -X POST "https://revor.ai/api/v2/customs/companies/search" \
+  -H "Authorization: Bearer sk-revor-REPLACE_ME" \
+  -H "Content-Type: application/json" \
+  -H "Prefer: wait=20" \
+  -d '{
+    "company_role": "importer",
+    "catalog": "imports",
+    "start_date": "2025-09-01",
+    "end_date": "2026-08-31",
+    "hs_code": "8429",
+    "product_description": "excavator",
+    "origin_country_code": "CHN",
+    "destination_country_code": "BRA",
+    "page": 1,
+    "page_size": 20,
+    "sort_by": "trade_count",
+    "sort_order": "desc"
+  }'
+```
+
+## Response
+
+For a successful job, `item.result.data.items` contains normalized fields including `company_name`, `country`, `country_code`, `trade_count`, `amount_usd`, `quantity`, `weight`, and amount share.
+
+Some coverage does not provide every statistic. Credits are settled against the number of company rows actually returned; a zero-row result ultimately consumes 0 credits.

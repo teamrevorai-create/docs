@@ -1,0 +1,144 @@
+---
+title: "Prospect imports, table research and smart outreach"
+sidebarTitle: "Imports, research and outreach workflow"
+description: "Overview of import workflows, table research, contact management, and smart outreach endpoints in Revor AI API v2."
+keywords:
+  - "Revor AI"
+  - "API v2"
+  - "Prospect imports, table research and smart outreach"
+---
+
+Use `Authorization: Bearer <API_KEY>`. All table and item IDs are public UUIDs returned by `/api/v2/websets` and `/websets/{id}/items`, not provider IDs. The following paths are relative to `/api/v2`.
+
+| Method and path | Permission | Purpose |
+| --- | --- | --- |
+| `POST /imports` | `prospects.imports:write` | Import structured records or request an upload URL. See [Create import](/api/v2/workflow-imports-create). |
+| `POST /imports/{runId}/complete` | `prospects.imports:write` | Confirm upload and queue import. See [Complete file import](/api/v2/workflow-imports-complete). |
+| `GET /imports/{runId}` | `prospects.imports:read` | Import progress and table IDs. See [Get import status](/api/v2/workflow-imports-get). |
+| `GET /websets/{id}/research/columns` | `websets.research:read` | Discover existing field keys. See [List research columns](/api/v2/workflow-research-columns). |
+| `POST /websets/{id}/research/runs` | `websets.research:write` | Research an existing table. See [Start research run](/api/v2/workflow-research-start). |
+| `GET /websets/{id}/research/runs/{runId}` | `websets.research:read` | Progress or current results. See [Get research run](/api/v2/workflow-research-get). |
+| `GET /websets/{id}/items/{itemId}/contacts/{fieldKey}` | `prospects.contacts:read` | Read contacts. See [Get contacts](/api/v2/workflow-contacts-get). |
+| `PATCH /websets/{id}/items/{itemId}/contacts/{fieldKey}` | `prospects.contacts:write` | Replace contacts. See [Update contacts](/api/v2/workflow-contacts-update). |
+| `GET /websets/{id}/smart-outreach` | `outreach.plans:read` | Ownership version and schedules. See [Get outreach plan](/api/v2/workflow-outreach-get). |
+| `POST /websets/{id}/smart-outreach/start` | `outreach.plans:write` | Start outreach. See [Start outreach](/api/v2/workflow-outreach-start). |
+| `POST /websets/{id}/smart-outreach/stop` | `outreach.plans:write` | Stop outreach. See [Stop outreach](/api/v2/workflow-outreach-stop). |
+| `POST /websets/{id}/smart-outreach/statuses` | `outreach.plans:read` | Batch item status. See [Batch outreach statuses](/api/v2/workflow-outreach-statuses). |
+| `GET /websets/{id}/smart-outreach/items/{itemId}?channel=email` | `outreach.plans:read` | Targets for one item. See [Get outreach item targets](/api/v2/workflow-outreach-item). |
+| `GET /websets/{id}/smart-outreach/drafts/{targetId}` | `outreach.plans:read` | Read a pending draft. See [Get outreach draft](/api/v2/workflow-outreach-draft-get). |
+| `PATCH /websets/{id}/smart-outreach/drafts/{targetId}` | `outreach.plans:write` | Edit a pending draft. See [Update outreach draft](/api/v2/workflow-outreach-draft-update). |
+
+<Note>
+  `{id}` refers to `websetId`. `{itemId}` and `{runId}` are item and run UUIDs respectively.
+</Note>
+
+## File import workflow
+
+For CSV or XLSX files up to 10 MiB, follow this sequence:
+
+<Steps>
+  <Step title="Initialize upload">
+    Call [`POST /imports`](/api/v2/workflow-imports-create) with `file_name`, `content_type`, `size_bytes`, and optional `locale` (`en` or `zh`).
+
+    The response includes:
+
+    - `id` - import run ID
+    - `webset_id` - target table ID
+    - `upload_url` - signed storage URL
+    - `method` - HTTP method for upload (usually `PUT`)
+    - `expires_in` - URL expiration time in seconds
+  </Step>
+  <Step title="Upload the file">
+    PUT the raw file bytes to `upload_url`. Do not forward the API key to the storage URL.
+  </Step>
+  <Step title="Confirm and queue">
+    Call [`POST /imports/{runId}/complete`](/api/v2/workflow-imports-complete) with `source_kind` (`csv` or `xlsx`), `file_name`, and `declared_size_bytes`.
+  </Step>
+  <Step title="Poll progress">
+    Call [`GET /imports/{runId}`](/api/v2/workflow-imports-get) and read results from `webset_ids`.
+  </Step>
+</Steps>
+
+<Warning>
+  Init and complete require separate `Idempotency-Key` values. Reuse each key for retries of the same step. Do not reuse the same key across different steps.
+</Warning>
+
+## Imports
+
+<CardGroup cols={2}>
+  <Card title="Create import" icon="upload" href="/api/v2/workflow-imports-create">
+    Import structured records or request a file upload URL.
+  </Card>
+
+  <Card title="Complete file import" icon="check" href="/api/v2/workflow-imports-complete">
+    Confirm upload and queue file import processing.
+  </Card>
+
+  <Card title="Get import status" icon="search" href="/api/v2/workflow-imports-get">
+    Poll import progress and get resulting table IDs.
+  </Card>
+</CardGroup>
+
+## Research
+
+<CardGroup cols={2}>
+  <Card title="List research columns" icon="table-columns" href="/api/v2/workflow-research-columns">
+    Discover existing research field keys for a table.
+  </Card>
+
+  <Card title="Start research run" icon="play" href="/api/v2/workflow-research-start">
+    Start a research run for contacts or custom fields.
+  </Card>
+
+  <Card title="Get research run" icon="search" href="/api/v2/workflow-research-get">
+    Poll progress and read current results.
+  </Card>
+</CardGroup>
+
+## Contacts
+
+<CardGroup cols={2}>
+  <Card title="Get contacts" icon="users" href="/api/v2/workflow-contacts-get">
+    Read contacts for a table item by field key.
+  </Card>
+
+  <Card title="Update contacts" icon="pen" href="/api/v2/workflow-contacts-update">
+    Replace the contacts for a table item by field key.
+  </Card>
+</CardGroup>
+
+## Smart outreach
+
+<CardGroup cols={2}>
+  <Card title="Get outreach plan" icon="clipboard-list" href="/api/v2/workflow-outreach-get">
+    Read ownership version and schedules before starting.
+  </Card>
+
+  <Card title="Start outreach" icon="rocket" href="/api/v2/workflow-outreach-start">
+    Start smart outreach for selected rows.
+  </Card>
+
+  <Card title="Stop outreach" icon="stop" href="/api/v2/workflow-outreach-stop">
+    Stop a smart outreach plan.
+  </Card>
+
+  <Card title="Batch outreach statuses" icon="list-check" href="/api/v2/workflow-outreach-statuses">
+    Get per-item dispatch status.
+  </Card>
+
+  <Card title="Get outreach item targets" icon="crosshairs" href="/api/v2/workflow-outreach-item">
+    Get targets for a single item.
+  </Card>
+
+  <Card title="Get outreach draft" icon="file-lines" href="/api/v2/workflow-outreach-draft-get">
+    Read a pending draft.
+  </Card>
+
+  <Card title="Update outreach draft" icon="pen-to-square" href="/api/v2/workflow-outreach-draft-update">
+    Edit a pending draft subject, body, or schedule.
+  </Card>
+</CardGroup>
+
+<Note>
+  MCP registration follows deployed API validation.
+</Note>

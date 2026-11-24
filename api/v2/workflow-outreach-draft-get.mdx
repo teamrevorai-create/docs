@@ -1,0 +1,41 @@
+---
+title: "Get outreach draft"
+description: "Read a pending outreach draft for a target."
+api: "GET https://revor.ai/api/v2/websets/{websetId}/smart-outreach/drafts/{targetId}"
+authMethod: "bearer"
+playground: "simple"
+keywords:
+  - "Revor AI"
+  - "API v2"
+  - "Get outreach draft"
+---
+
+Read a pending outreach draft. Check `editable` and `editable_reason` before editing.
+
+## Overview
+
+| | |
+| --- | --- |
+| Method | `GET` |
+| Path | `/api/v2/websets/{websetId}/smart-outreach/drafts/{targetId}` |
+| Permission | `outreach.plans:read` |
+| Returns | Draft content with editable flags |
+
+## Path parameters
+
+<ParamField path="websetId" type="string" required>
+  Table UUID.
+</ParamField>
+
+<ParamField path="targetId" type="string" required>
+  Target UUID.
+</ParamField>
+
+## Behavior
+
+Check `editable` and `editable_reason` before editing. Drafts that are already sending or sent cannot be edited. Editing affects only the current pending draft, not historical or future rounds.
+
+```bash cURL
+curl -X GET "https://revor.ai/api/v2/websets/{websetId}/smart-outreach/drafts/{targetId}" \
+  -H "Authorization: Bearer sk-revor-REPLACE_ME"
+```

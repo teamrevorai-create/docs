@@ -1,0 +1,135 @@
+---
+title: "Start outreach"
+description: "Start smart outreach for selected rows of a table."
+api: "POST https://revor.ai/api/v2/websets/{websetId}/smart-outreach/start"
+authMethod: "bearer"
+playground: "simple"
+keywords:
+  - "Revor AI"
+  - "API v2"
+  - "Start outreach"
+---
+
+Start a smart outreach plan for selected rows of a table. Requires the current ownership version from `GET /smart-outreach`.
+
+## Overview
+
+| | |
+| --- | --- |
+| Method | `POST` |
+| Path | `/api/v2/websets/{websetId}/smart-outreach/start` |
+| Permission | `outreach.plans:write` |
+| Idempotency | Required via `Idempotency-Key` header |
+| Returns | Accepted plan status |
+
+## Path parameters
+
+<ParamField path="websetId" type="string" required>
+  Table UUID.
+</ParamField>
+
+## Before starting
+
+<Steps>
+  <Step title="Read ownership">
+    Call `GET /websets/{websetId}/smart-outreach` to get `owner_agent_id` and `ownership_version`.
+  </Step>
+  <Step title="Persist missing channel mappings">
+    Missing channel mappings are saved from existing imported and researched contact aggregate fields. This allows the Console to display its outreach column after refresh. A mapping persistence failure prevents startup.
+  </Step>
+  <Step title="Start the plan">
+    Call `POST /smart-outreach/start` with the actual ownership values from step 1.
+  </Step>
+</Steps>
+
+<Note>
+  Saving mappings and starting the schedule are separate operations. A later startup failure may leave the saved configuration in place, similar to the Console flow.
+</Note>
+
+## Request body
+
+<ParamField body="agent_id" type="string" required>
+  UUID of the outreach agent.
+</ParamField>
+
+<ParamField body="start_request_id" type="string" required>
+  UUID for this specific start request.
+</ParamField>
+
+<ParamField body="expected_owner_agent_id" type="string">
+  Must match the actual `owner_agent_id` from GET. Use `null` when there is no owner.
+</ParamField>
+
+<ParamField body="expected_ownership_version" type="number" required>
+  Must match the actual `ownership_version` from GET.
+</ParamField>
+
+<ParamField body="item_ids" type="string[]" required>
+  Non-empty array of row UUIDs. Maximum 1000.
+</ParamField>
+
+<ParamField body="channels" type="string[]" required>
+  List of outreach channels, for example `["email"]`.
+</ParamField>
+
+<ParamField body="schedule_type" type="string" required>
+  `"daily"` or `"weekly"`.
+</ParamField>
+
+<ParamField body="time_of_day" type="string" required>
+  Time in `HH:MM` format.
+</ParamField>
+
+<ParamField body="timezone" type="string" required>
+  IANA timezone identifier, for example `"Asia/Shanghai"`.
+</ParamField>
+
+<ParamField body="weekdays" type="number[]">
+  Required when `schedule_type` is `"weekly"`. Array of 0-6 values (Sunday to Saturday).
+</ParamField>
+
+<ParamField body="batch_limit" type="number">
+  Optional batch size limit.
+</ParamField>
+
+<ParamField body="ui_locale" type="string">
+  Optional locale for UI, for example `"en"` or `"zh"`.
+</ParamField>
+
+```json Request body
+{
+  "agent_id": "agent-uuid",
+  "start_request_id": "start-req-uuid",
+  "expected_owner_agent_id": null,
+  "expected_ownership_version": 0,
+  "item_ids": ["row-uuid"],
+  "channels": ["email"],
+  "schedule_type": "daily",
+  "time_of_day": "09:00",
+  "timezone": "Asia/Shanghai",
+  "ui_locale": "en"
+}
+```
+
+<Warning>
+  Start success only means the plan is accepted, not that messages are already sent. Continue checking target status for actual dispatch.
+</Warning>
+
+```bash cURL
+curl -X POST "https://revor.ai/api/v2/websets/{websetId}/smart-outreach/start" \
+  -H "Authorization: Bearer sk-revor-REPLACE_ME" \
+  -H "Idempotency-Key: outreach-start-001" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "agent_id": "agent-uuid",
+    "start_request_id": "start-req-uuid",
+    "expected_owner_agent_id": null,
+    "expected_ownership_version": 0,
+    "item_ids": ["row-uuid"],
+    "channels": ["email"],
+    "schedule_type": "daily",
+    "time_of_day": "09:00",
+    "timezone": "Asia/Shanghai",
+    "ui_locale": "en"
+  }'
+```

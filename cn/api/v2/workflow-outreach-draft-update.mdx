@@ -1,0 +1,80 @@
+---
+title: "修改待发送草稿"
+description: "更新指定目标的待发送触达草稿内容和排期。"
+api: "PATCH https://revor.ai/api/v2/websets/{websetId}/smart-outreach/drafts/{targetId}"
+authMethod: "bearer"
+playground: "simple"
+keywords:
+  - "Revor AI"
+  - "API v2"
+  - "修改待发送草稿"
+---
+
+更新指定目标的待发送触达草稿内容和排期。发送中/已发送的草稿不可编辑。409 后先重读归属，不盲目接管。
+
+## 接口概览
+
+|  |  |
+| --- | --- |
+| 方法 | `PATCH` |
+| 路径 | `/api/v2/websets/{websetId}/smart-outreach/drafts/{targetId}` |
+| 权限 | `outreach.plans:write` |
+| 幂等性 | 通过 `Idempotency-Key` 请求头实现 |
+
+## 路径参数
+
+<ParamField path="websetId" type="string" required>
+  表格 UUID。
+</ParamField>
+
+<ParamField path="targetId" type="string" required>
+  目标 ID。
+</ParamField>
+
+## 请求体
+
+```json 草稿 PATCH
+{
+  "subject": "主题",
+  "body": "正文",
+  "schedule": {
+    "local_datetime": "2026-12-01T09:00",
+    "timezone": "Asia/Shanghai"
+  }
+}
+```
+
+<ParamField body="subject" type="string" required>
+  草稿主题。
+</ParamField>
+
+<ParamField body="body" type="string" required>
+  草稿正文。
+</ParamField>
+
+<ParamField body="schedule" type="object">
+  可选新排期，包含 `local_datetime` 和 `timezone`。省略则保留原时间。
+</ParamField>
+
+## 请求示例
+
+```bash cURL
+curl -X PATCH "https://revor.ai/api/v2/websets/webset-uuid/smart-outreach/drafts/target-uuid" \
+  -H "Authorization: Bearer sk-revor-REPLACE_ME" \
+  -H "Idempotency-Key: draft-patch-001" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "subject": "主题",
+    "body": "正文",
+    "schedule": {
+      "local_datetime": "2026-12-01T09:00",
+      "timezone": "Asia/Shanghai"
+    }
+  }'
+```
+
+## 行为说明
+
+- 这里编辑的是当前待发送 target 草稿，不覆盖任意历史或后续轮次
+- 409 后先重读归属，不盲目接管
+- 先查 `editable` 和 `editable_reason`，发送中/已发送的草稿不可编辑

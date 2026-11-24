@@ -1,0 +1,64 @@
+---
+title: "停止智能触达"
+description: "停止指定表格的智能触达计划。"
+api: "POST https://revor.ai/api/v2/websets/{websetId}/smart-outreach/stop"
+authMethod: "bearer"
+playground: "simple"
+keywords:
+  - "Revor AI"
+  - "API v2"
+  - "停止智能触达"
+---
+
+停止指定表格的智能触达计划。已进入外部投递的动作不能视为已经撤回。
+
+## 接口概览
+
+|  |  |
+| --- | --- |
+| 方法 | `POST` |
+| 路径 | `/api/v2/websets/{websetId}/smart-outreach/stop` |
+| 权限 | `outreach.plans:write` |
+| 幂等性 | 通过 `Idempotency-Key` 请求头实现 |
+
+## 路径参数
+
+<ParamField path="websetId" type="string" required>
+  表格 UUID。
+</ParamField>
+
+## 请求体
+
+```json 停止请求
+{
+  "reason": "停止本轮测试"
+}
+```
+
+<ParamField body="reason" type="string">
+  可选，停止原因。
+</ParamField>
+
+stop body 可为 `{}` 或带 `reason`。
+
+## 请求示例
+
+```bash cURL
+curl -X POST "https://revor.ai/api/v2/websets/webset-uuid/smart-outreach/stop" \
+  -H "Authorization: Bearer sk-revor-REPLACE_ME" \
+  -H "Idempotency-Key: outreach-stop-001" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "reason": "停止本轮测试"
+  }'
+```
+
+## 响应
+
+返回：
+
+- `stopped_plans`
+- `revoked_count`
+- `in_flight_count`
+
+已进入外部投递的动作不能视为已经撤回。停止保留映射和历史草稿，不表示仍会发送。

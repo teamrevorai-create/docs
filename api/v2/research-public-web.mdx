@@ -1,0 +1,105 @@
+---
+title: "Research public web"
+description: "Search public-web sources by query and return a list of sources with summaries."
+api: "POST https://revor.ai/api/v2/research/public-web"
+authMethod: "bearer"
+playground: "simple"
+keywords:
+  - "Revor AI"
+  - "API v2"
+  - "Research public web"
+---
+
+Search public-web sources by query and return a list of sources with summaries.
+
+## At a glance
+
+|  |  |
+| --- | --- |
+| Method | `POST` |
+| Path | `/api/v2/research/public-web` |
+| Permission | Contact your admin to confirm this endpoint is included in your product plan. |
+| Returns | Async job result with a list of sources |
+
+## Request
+
+`Idempotency-Key` is optional; send and reuse it when safe retries are required. You may send `Prefer: wait=20`. If the job finishes during the wait window, the endpoint returns HTTP `200`; otherwise it returns HTTP `202`, and the caller continues polling `/api/v2/jobs/{id}`.
+
+### Parameters
+
+<ParamField body="queries" type="string[]" required>
+  1-2 queries, each up to 500 characters.
+</ParamField>
+
+<ParamField body="search_limit" type="integer">
+  1-10 sources per query; default 10.
+</ParamField>
+
+<ParamField body="category" type="string">
+  Preferred page type: `company`, `news`, `financial report`, `people`, or `personal site`. For example, use `news` for news pages and `people` for person-related pages.
+</ParamField>
+
+<ParamField body="include_domains" type="string[]">
+  Up to 5 domains.
+</ParamField>
+
+<ParamField body="user_location" type="string">
+  Two-letter country code, such as `US`.
+</ParamField>
+
+### Example request
+
+```bash cURL
+curl -X POST "https://revor.ai/api/v2/research/public-web" \
+  -H "Authorization: Bearer sk-revor-REPLACE_ME" \
+  -H "Content-Type: application/json" \
+  -H "Prefer: wait=20" \
+  -d '{
+    "queries": ["Banbros Commercial Inc company profile"],
+    "search_limit": 5,
+    "category": "company",
+    "include_domains": [],
+    "user_location": "US"
+  }'
+```
+
+## Response
+
+```json 200
+{
+  "status": "complete",
+  "queries": ["Banbros Commercial Inc company profile"],
+  "searched_queries": 1,
+  "results_per_query": 5,
+  "results": [
+    {
+      "query": "Banbros Commercial Inc company profile",
+      "sources": [
+        {
+          "url": "https://example.com/company",
+          "title": "Company Profile",
+          "published_date": null,
+          "author": null,
+          "image": null,
+          "highlights": ["..."],
+          "text": "..."
+        }
+      ]
+    }
+  ],
+  "errors": []
+}
+```
+
+### Behavior
+
+- If one query fails while another succeeds, `status` may be `partial`, with failures listed in `errors`.
+- Source text is length-limited; `...[truncated]` means the source text was trimmed to the response limit.
+
+## Errors
+
+| HTTP | Description |
+| --- | --- |
+| `400` | Invalid parameters or malformed request |
+| `403` | Endpoint not included in product plan |
+| `202` | Job is still running; poll `/api/v2/jobs/{id}` |

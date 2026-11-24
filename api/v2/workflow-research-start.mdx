@@ -1,0 +1,119 @@
+---
+title: "Start research run"
+description: "Start a research run on an existing table to discover contacts or custom fields."
+api: "POST https://revor.ai/api/v2/websets/{websetId}/research/runs"
+authMethod: "bearer"
+playground: "simple"
+keywords:
+  - "Revor AI"
+  - "API v2"
+  - "Start research run"
+---
+
+Start a research run on an existing table. Choose scope and research kind to discover key contacts, website contact channels, or custom data fields.
+
+## Overview
+
+| | |
+| --- | --- |
+| Method | `POST` |
+| Path | `/api/v2/websets/{websetId}/research/runs` |
+| Permission | `websets.research:write` |
+| Idempotency | Required via `Idempotency-Key` header |
+| Returns | `202` with run ID, kind, field key, and reused flag |
+
+## Path parameters
+
+<ParamField path="websetId" type="string" required>
+  Table UUID to research.
+</ParamField>
+
+## Request body
+
+<ParamField body="scope" type="object" required>
+  Must be one of:
+
+  - `{"mode":"all"}` - research the entire table
+  - `{"mode":"selected","item_ids":["UUID"]}` - research up to 1000 specific rows
+</ParamField>
+
+<ParamField body="kind" type="string" required>
+  One of `key_contacts`, `website_contacts`, or `custom`.
+</ParamField>
+
+<ParamField body="label" type="string">
+  Optional display label for the research column.
+</ParamField>
+
+<ParamField body="force" default="false" type="boolean">
+  If `true`, force refresh even if cached results exist. May re-trigger billing.
+</ParamField>
+
+## Research kinds
+
+<AccordionGroup>
+  <Accordion title="key_contacts">
+    Discover key contacts by job title.
+
+    - `positions` - array of 1-24 strings, maximum 60 characters each
+    - `max_contacts_per_company` - 1-50, default 50
+    - Result column key: `snovio_key_contacts`
+  </Accordion>
+
+  <Accordion title="website_contacts">
+    Extract contact channels from the company website.
+
+    - `channels` required - choose from `email`, `whatsapp`, `phone`
+    - Result column key: `company_social_contacts`
+  </Accordion>
+
+  <Accordion title="custom">
+    Research a custom question.
+
+    - `field_key` - column key to create or reuse
+    - `question` - the research question
+    - `field_type` - `text`, `number`, `boolean`, or `list`
+    - `subject_mode` - `company` or `person`
+    - `allowed_options` - optional, for `list` type
+    - `locale` - optional
+
+    Employee count uses custom research.
+  </Accordion>
+</AccordionGroup>
+
+## Request example
+
+```json Request body
+{
+  "kind": "key_contacts",
+  "scope": {
+    "mode": "all"
+  },
+  "positions": ["CEO", "Procurement"],
+  "max_contacts_per_company": 50
+}
+```
+
+## Behavior
+
+- Invalid or inaccessible selected items reject the entire request
+- Existing run, billing, caching, and worker behavior is reused
+- Creation returns 202 with `run`, `kind`, `field_key`, and `reused`
+- Poll with `page`, `limit` (maximum 100), and `view=progress` or `view=results`
+- Results are current effective values, including manual edits, not historical raw provider responses
+- Research does not automatically start outreach
+
+```bash cURL
+curl -X POST "https://revor.ai/api/v2/websets/{websetId}/research/runs" \
+  -H "Authorization: Bearer sk-revor-REPLACE_ME" \
+  -H "Idempotency-Key: research-run-001" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "kind": "key_contacts",
+    "scope": {
+      "mode": "all"
+    },
+    "positions": ["CEO", "Procurement"],
+    "max_contacts_per_company": 50
+  }'
+```

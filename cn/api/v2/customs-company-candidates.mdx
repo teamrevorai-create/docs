@@ -1,0 +1,124 @@
+---
+title: "查找可用的海关企业名称"
+description: "在指定日期范围内查找含有贸易记录的精确名称字符串。"
+api: "POST https://revor.ai/api/v2/customs/company-candidates"
+authMethod: "bearer"
+playground: "simple"
+keywords:
+  - "Revor AI"
+  - "API v2"
+  - "查找可用的海关企业名称"
+---
+
+在指定日期范围内查找含有贸易记录的精确名称字符串。这不是法律主体识别服务。
+
+## 接口概览
+
+|  |  |
+| --- | --- |
+| 方法 | `POST` |
+| 路径 | `/api/v2/customs/company-candidates` |
+| 返回 | 企业名称候选及贸易数与可查询标识 |
+| 幂等性 | 支持 |
+
+`company_role` 和 `catalog` 可选，但应同时提供。两者都省略时，接口会检查 `importer/imports` 与 `exporter/exports` 两条常用查询组合；只提供其中一个时，另一个按常用组合补全。
+
+## 请求
+
+### 参数
+
+<ParamField body="company_name" type="string" required>
+  希望在海关数据集中查找的企业名称。
+</ParamField>
+
+<ParamField body="company_role" type="string">
+  `importer` 或 `exporter`。
+</ParamField>
+
+<ParamField body="catalog" type="string">
+  `imports` 或 `exports`。
+</ParamField>
+
+<ParamField body="compare_catalogs" type="boolean">
+  与 `company_role` 配合使用；设为 `true` 时同时检查两个目录。明确只查询所填 `catalog` 时设为 `false`。
+</ParamField>
+
+<ParamField body="start_date" type="date" required>
+  `YYYY-MM-DD`。
+</ParamField>
+
+<ParamField body="end_date" type="date" required>
+  `YYYY-MM-DD`，查询跨度最多一年。
+</ParamField>
+
+<ParamField body="page" default="1" type="integer">
+  默认 1。
+</ParamField>
+
+<ParamField body="page_size" default="20" type="integer">
+  1-20，默认 20。
+</ParamField>
+
+<ParamField body="country_codes" type="string">
+  一个或多个 ISO 3166-1 alpha-3 国家/地区代码，以逗号分隔，例如 `USA,IDN`。
+</ParamField>
+
+### 请求示例
+
+```bash cURL
+curl -X POST "https://revor.ai/api/v2/customs/company-candidates" \
+  -H "Authorization: Bearer sk-revor-REPLACE_ME" \
+  -H "Content-Type: application/json" \
+  -H "Prefer: wait=20" \
+  -d '{
+    "company_name": "Banbros Commercial Inc.",
+    "start_date": "2025-08-01",
+    "end_date": "2026-07-31",
+    "page": 1,
+    "page_size": 20,
+    "company_role": "exporter",
+    "catalog": "imports",
+    "compare_catalogs": false,
+    "country_codes": "IDN"
+  }'
+```
+
+## 响应示例
+
+```json 200
+{
+  "query": "Banbros Commercial Inc.",
+  "date_range": {
+    "start": "2025-08-01",
+    "end": "2026-07-31"
+  },
+  "routing_evidence": {
+    "mode": "explicit",
+    "company_role": "exporter",
+    "catalogs_checked": ["imports"]
+  },
+  "identity_notice": "Trade counts prove exact-name queryability only, not authoritative legal identity.",
+  "candidates": [
+    {
+      "name": "BANBROS COMMERCIAL INC",
+      "source": "company_list",
+      "countries": ["Indonesia"],
+      "company_ids": ["provider-company-id"],
+      "trade_counts": {
+        "start_date": "2025-08-01",
+        "end_date": "2026-07-31",
+        "company_role": "exporter",
+        "catalog": "imports",
+        "imports_as_exporter": 18,
+        "total": 18,
+        "queryable": true
+      },
+      "identity_status": "unverified"
+    }
+  ]
+}
+```
+
+<Info>
+  该接口当前不计费；任务返回 `billing.status: not_billable` 和 `charged_credits: 0`。
+</Info>

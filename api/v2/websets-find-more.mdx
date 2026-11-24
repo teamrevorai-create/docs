@@ -1,0 +1,95 @@
+---
+title: "Find more prospects"
+description: "The existing POST /api/v2/websets/{webset_id}/find-more endpoint remains supported with the same parameters, response fields, and permissions. Both URLs execute the same operation."
+keywords: ["Revor AI", "API v2", "Find more prospects"]
+api: "POST https://revor.ai/api/v2/prospect-lists/{webset_id}/expand"
+authMethod: "bearer"
+playground: "simple"
+---
+
+Starts another discovery run on an existing Webset. `count` is the desired number of additional prospects, not a new total.
+
+## At a glance
+
+|  |  |
+| --- | --- |
+| Method | `POST` |
+| Path | `/api/v2/prospect-lists/{webset_id}/expand` |
+| Permission | `websets:write` |
+| Idempotency | `Idempotency-Key` is required |
+| Billing | Consumes credits |
+| Returns | `202` with a job object |
+
+The existing `POST /api/v2/websets/{webset_id}/find-more` endpoint remains supported with the same parameters, response fields, and permissions. Both URLs execute the same operation. Runs asynchronously.
+
+## Before calling
+
+Read the current [Items snapshot](/api/v2/websets-items) and retain the first page's `stream_cursor` and `items_revision`. After Find More is accepted, this old checkpoint lets the stream replay every change from the new run.
+
+## Request
+
+`Idempotency-Key` is required. Reuse it when retrying the same operation after a network failure.
+
+<ParamField body="count" type="number" required>
+  May be `25`, `100`, `500`, or `1000` and is limited by the current plan.
+</ParamField>
+
+```bash cURL
+curl -X POST "https://revor.ai/api/v2/prospect-lists/WEBSET_ID/expand" \
+  -H "Authorization: Bearer sk-revor-REPLACE_ME" \
+  -H "Idempotency-Key: find-more-001" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "count": 25
+  }'
+```
+
+```json Request body
+{
+  "count": 25
+}
+```
+
+## Response
+
+HTTP `202` accepted:
+
+```json 202
+{
+  "ok": true,
+  "request_id": "req_xxx",
+  "item": {
+    "id": "job-uuid",
+    "action": "websets.find_more",
+    "status": "queued",
+    "progress": {
+      "stage": "queued",
+      "percent": 0
+    },
+    "resource": {
+      "type": "webset",
+      "id": "webset-uuid"
+    },
+    "scheduled_at": "2026-09-24T08:10:00.000Z",
+    "started_at": null,
+    "finished_at": null,
+    "attempt_count": 0,
+    "result": null,
+    "error": null,
+    "billing": {
+      "status": "pending",
+      "charged_credits": 0,
+      "pending_units": 0
+    }
+  }
+}
+```
+
+## Errors
+
+| HTTP | Code | Description |
+| --- | --- | --- |
+| `400` | `idempotency_key_required` | `Idempotency-Key` header is missing. |
+| `409` | `idempotency_conflict` | The same idempotency key was used for another request. |
+
+Save `item.id` as the `job_id`, then open [Find More SSE](/api/v2/websets-find-more-stream).

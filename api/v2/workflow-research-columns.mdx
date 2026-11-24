@@ -1,0 +1,37 @@
+---
+title: "List research columns"
+description: "Discover existing research column field keys for a table."
+api: "GET https://revor.ai/api/v2/websets/{websetId}/research/columns"
+authMethod: "bearer"
+playground: "simple"
+keywords:
+  - "Revor AI"
+  - "API v2"
+  - "List research columns"
+---
+
+List the existing research column keys for a table. Use the returned field keys when reading contacts or starting new research runs.
+
+## Overview
+
+| | |
+| --- | --- |
+| Method | `GET` |
+| Path | `/api/v2/websets/{websetId}/research/columns` |
+| Permission | `websets.research:read` |
+| Returns | Array of research column definitions |
+
+## Path parameters
+
+<ParamField path="websetId" type="string" required>
+  Table UUID.
+</ParamField>
+
+## Response
+
+Returns research column definitions, including standard and custom field keys. Use these keys with the contacts endpoints and research run endpoints.
+
+```bash cURL
+curl -X GET "https://revor.ai/api/v2/websets/{websetId}/research/columns" \
+  -H "Authorization: Bearer sk-revor-REPLACE_ME"
+```

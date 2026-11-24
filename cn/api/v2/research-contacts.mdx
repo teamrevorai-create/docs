@@ -1,0 +1,116 @@
+---
+title: "企业联系人搜索"
+description: "根据已确认的企业官网域名搜索相关联系人信息。"
+api: "POST https://revor.ai/api/v2/research/contacts"
+authMethod: "bearer"
+playground: "simple"
+keywords:
+  - "Revor AI"
+  - "API v2"
+  - "企业联系人搜索"
+---
+
+## 接口概览
+
+|  |  |
+| --- | --- |
+| 方法 | `POST` |
+| 路径 | `/api/v2/research/contacts` |
+| 权限 | 请联系管理员确认您的产品套餐是否包含此接口。 |
+| 返回 | 联系人列表及组织层级推断结果 |
+
+## 请求
+
+`Idempotency-Key` 是可选的；需要安全重试时建议发送并复用同一个值。可以发送 `Prefer: wait=20`。如果任务在等待窗口内结束，接口直接返回 HTTP `200`；否则返回 HTTP `202`，调用方继续轮询 `/api/v2/jobs/{id}`。
+
+<Warning>
+  必须使用已确认的企业官网域名，不要使用公司名称或 LinkedIn URL 替代 domain。
+</Warning>
+
+### 参数
+
+<ParamField body="domain" type="string" required>
+  官网域名；会移除协议和 `www.`。
+</ParamField>
+
+<ParamField body="positions" type="string[]">
+  最多 30 个职位关键词，每项最多 80 字符。
+</ParamField>
+
+<ParamField body="limit" type="integer">
+  1-50，默认 20。
+</ParamField>
+
+<ParamField body="locale" type="string">
+  `en` 或 `zh`，默认 `en`。
+</ParamField>
+
+### 请求示例
+
+```bash cURL
+curl -X POST "https://revor.ai/api/v2/research/contacts" \
+  -H "Authorization: Bearer sk-revor-REPLACE_ME" \
+  -H "Content-Type: application/json" \
+  -H "Prefer: wait=20" \
+  -d '{
+    "domain": "example.com",
+    "positions": ["procurement", "supply chain", "purchasing"],
+    "limit": 20,
+    "locale": "en"
+  }'
+```
+
+## 响应示例
+
+```json 200
+{
+  "status": "done",
+  "domain": "example.com",
+  "company_name": "Example Inc.",
+  "contacts": [
+    {
+      "email": "alex@example.com",
+      "status": "valid",
+      "position": "VP Supply Chain",
+      "first_name": "Alex",
+      "last_name": "Morgan",
+      "full_name": "Alex Morgan",
+      "linkedin_url": "https://www.linkedin.com/in/example/"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "contact:alex@example.com",
+      "kind": "person",
+      "title": "VP Supply Chain",
+      "name": "Alex Morgan",
+      "email": "alex@example.com",
+      "status": "valid",
+      "linkedin_url": "https://www.linkedin.com/in/example/",
+      "department": "Supply Chain",
+      "seniority": "vp",
+      "sort_order": 1
+    }
+  ],
+  "edges": [
+    {
+      "from": "contact:alex@example.com",
+      "to": "department:supply-chain",
+      "relation": "member_of",
+      "confidence": 0.8,
+      "sort_order": 1
+    }
+  ],
+  "note": "The hierarchy is inferred from available contact titles and is not a verified reporting structure."
+}
+```
+
+### 结果说明
+
+<Warning>
+  组织层级是根据可用职位信息推断的，不是经过企业确认的正式汇报关系。上游联系人数据按原始结果返回，API 不猜测或修正身份。
+</Warning>
+
+<Note>
+  返回可用联系人时，`result.status` 为 `done`；搜索已完成但没有可用联系人时为 `no_result`。`no_result` 是成功的空结果，不能作为判断企业规模、透明度或质量的依据。
+</Note>

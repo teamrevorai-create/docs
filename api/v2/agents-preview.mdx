@@ -1,0 +1,148 @@
+---
+title: "Preview agent message"
+description: "Preview a single message against an agent before sending."
+api: "POST https://revor.ai/api/v2/agents/preview"
+authMethod: "bearer"
+playground: "simple"
+keywords:
+  - "Revor AI"
+  - "API v2"
+  - "Preview agent message"
+---
+
+Preview a single message against an agent configuration before sending.
+
+## Overview
+
+|  |  |
+| --- | --- |
+| Method | `POST` |
+| Path | `/api/v2/agents/preview` |
+| Permission | `agents:write` |
+| Idempotency | Required (`Idempotency-Key` header) |
+| Rate limit | `expensive_create` |
+| Returns | Public job (poll `GET /api/v2/jobs/{id}`) |
+
+## Request body
+
+<ParamField body="agent_id" type="string" required>
+  UUID of the agent to preview against.
+</ParamField>
+
+<ParamField body="channel" type="string" required>
+  One of `email`, `linkedin`, or `whatsapp`.
+</ParamField>
+
+<ParamField body="locale" type="string">
+  Defaults to `en`.
+</ParamField>
+
+<ParamField body="lead" type="object">
+  Requires `company`. Either `lead` or `lead_cursor` must be supplied, but not both.
+</ParamField>
+
+<ParamField body="lead_cursor" type="string">
+  An existing preview contact cursor. Ownership is checked.
+</ParamField>
+
+<ParamField body="research_enabled" type="boolean">
+  Omitted uses the agent's saved preview research toggle.
+</ParamField>
+
+<ParamField body="config" type="object">
+  Optional overrides applied only to this request.
+</ParamField>
+
+```bash cURL
+curl -X POST "https://revor.ai/api/v2/agents/preview" \
+  -H "Authorization: Bearer sk-revor-REPLACE_ME" \
+  -H "Idempotency-Key: preview-msg-001" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "agent_id": "agent-uuid",
+    "channel": "email",
+    "locale": "en",
+    "lead": {
+      "name": "Alice",
+      "title": "Purchasing Manager",
+      "company": "Example Manufacturing"
+    },
+    "research_enabled": true,
+    "config": {
+      "send_language": "en"
+    }
+  }'
+```
+
+### Config overrides
+
+The saved agent configuration is the base. Optional `config` overrides apply only to this request and are not saved.
+
+<Accordion title="All supported override fields">
+  - `active_system_prompt`
+  - `active_goal_prompt`
+  - `active_reference_template`
+  - `reference_template_strict`
+  - `extra_context`
+  - `sender_name`
+  - `sender_title`
+  - `sender_company`
+  - `sender_company_website`
+  - `sender_company_summary`
+  - `sender_bio`
+  - `send_language`
+  - `style_tags`
+  - `content_generation_mode`
+  - `content_input`
+  - `goal_type`
+</Accordion>
+
+<Warning>
+  Preview does not publish the agent, send messages, or change the generation version.
+</Warning>
+
+## Response
+
+```json 202
+{
+  "ok": true,
+  "request_id": "req_xxx",
+  "item": {
+    "id": "job-uuid",
+    "status": "queued",
+    "type": "agent_preview"
+  }
+}
+```
+
+### Result
+
+Successful `item.result` contains:
+
+- `agent_id`
+- `channel`
+- `messages`
+- `research_run_id`
+- `agent_version`
+
+`item.billing` contains the billing result. Email messages retain `subject` and `text`.
+
+Cancellation is allowed only before the first execution, not while waiting for retries.
+
+### Behavior
+
+- Agent ownership and cursor ownership are checked.
+- Ordinary generation consumes one ordinary outreach allowance unit.
+- Research generation consumes one research outreach unit, including research and writing, without an additional ordinary unit.
+- Meta WhatsApp templates reuse the existing template result and consume an ordinary unit.
+- Confirmed generation failures refund the reservation.
+- Unknown outcomes retain the original billing batch for recovery without regenerating or assuming a refund.
+
+## Errors
+
+| HTTP | Code | Meaning |
+| --- | --- | --- |
+| `400` | `external_api_preview_input_invalid` | Invalid input |
+| `403` | `permission_denied` | Missing required permission |
+
+Ownership, allowance, and generation failures surface in the asynchronous job error.

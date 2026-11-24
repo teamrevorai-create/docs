@@ -1,0 +1,131 @@
+---
+title: "发送单次外联"
+description: "使用已连接账号发送一封 Email、一条 WhatsApp 消息，或者执行一次 LinkedIn 外联。LinkedIn 已建立关系时发送消息，尚未建立关系时发送带留言的连接邀请。"
+keywords: ["Revor AI", "API v2", "发送单次外联"]
+api: "POST https://revor.ai/api/v2/outreach/dispatches"
+authMethod: "bearer"
+playground: "simple"
+---
+
+使用已连接账号发送一封 Email、一条 WhatsApp 消息，或者执行一次 LinkedIn 外联。LinkedIn 已建立关系时发送消息，尚未建立关系时发送带留言的连接邀请。
+
+接口返回 HTTP `202` 和任务 ID；使用统一任务接口查询最终结果。
+
+|  |  |
+| --- | --- |
+| 方法 | `POST` |
+| 权限 | 单条触达创建 |
+| 幂等 | 可选；重试时复用 `Idempotency-Key` 可避免重复 |
+| 返回 | 任务 ID |
+
+## Headers
+
+<ParamField header="Authorization" type="string" required>
+  `Bearer sk-revor-...`。
+</ParamField>
+
+<ParamField header="Content-Type" type="string" required>
+  `application/json`。
+</ParamField>
+
+<ParamField header="Idempotency-Key" type="string">
+  可靠重试标识；同一次业务操作重试时复用原值，避免重复发送。
+</ParamField>
+
+## Request Body
+
+<ParamField body="account_id" type="string" required>
+  从 Connect 账号接口取得。
+</ParamField>
+
+<ParamField body="channel" type="string" required>
+  `email`、`linkedin` 或 `whatsapp`，必须与账号渠道一致。
+</ParamField>
+
+<ParamField body="action" type="string" required>
+  固定为 `outreach`。
+</ParamField>
+
+<ParamField body="recipient" type="object" required>
+  接收方信息。
+</ParamField>
+
+<ParamField body="content" type="object" required>
+  发送内容。
+</ParamField>
+
+<ParamField body="metadata" type="object">
+  调用方自定义上下文。
+</ParamField>
+
+<ParamField body="min_channel_task_interval_seconds" default="60" type="number">
+  同一用户、同一渠道的最小任务间隔；默认值为 60，允许范围为 60-86400 秒。
+</ParamField>
+
+不同渠道互不占用任务间隔。批量提交时建议在 180 至 360 秒范围内为每个任务生成不同间隔，避免固定节奏连续发送。
+
+## 各渠道字段
+
+| 渠道 | recipient | content |
+| --- | --- | --- |
+| Email | `address`，可选 `name` | 必须有 `subject`，并提供 `text` 或 `html`。 |
+| LinkedIn | `profile_url` | 提供 `text` 或有效附件。已连接时发送消息，未连接时发送带留言的邀请。 |
+| WhatsApp | `phone` | 提供 `text` 或有效附件。 |
+
+附件包含 `filename`、`contentBase64`，可选 `contentType`。
+
+### 输入限制
+
+<Warning>
+  以下限制同时适用于 MCP 外联：最多 10 个附件，单个文件解码后不超过 5,000,000 字节，合计不超过 8,000,000 字节。`contentBase64` 必须是标准 Base64，需要时保留 padding，不允许空白或 data URL 前缀。文件名与 MIME 类型分别不超过 255 个 UTF-8 字节。
+</Warning>
+
+`subject` 不超过 1,024 个 UTF-8 字节；`text`、`html` 分别不超过 256,000 字节。`metadata` 序列化后不超过 16,000 个 JSON 字节，最多 8 层对象/数组。完整请求不超过 12,000,000 字节。超限直接拒绝，不截断。LinkedIn 个人主页 URL 必须使用 HTTPS、`linkedin.com` 或 `www.linkedin.com` 域名及 `/in/…` 路径，不允许 URL 凭据或非标准端口。
+
+## 请求示例
+
+```bash cURL
+curl -X POST "https://revor.ai/api/v2/outreach/dispatches" \
+  -H "Authorization: Bearer sk-revor-REPLACE_ME" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "account_id": "connect_account_xxx",
+    "channel": "email",
+    "action": "outreach",
+    "recipient": { "address": "prospect@example.com", "name": "Alex" },
+    "content": { "subject": "Quick introduction", "text": "Hi Alex, ..." }
+  }'
+```
+
+## 响应示例
+
+<Note>
+  使用 `GET /api/v2/jobs/job_uuid` 查询结果。创建成功仅表示任务已接受，不表示消息已经发送。
+</Note>
+
+```json 200
+{
+  "ok": true,
+  "request_id": "req_xxx",
+  "item": {
+    "id": "job_uuid",
+    "status": "scheduled",
+    "action": "outreach.dispatch",
+    "channel": "email",
+    "scheduled_at": "2026-08-26T10:00:00.000Z"
+  }
+}
+```
+
+## 常见错误
+
+| HTTP | Code | 说明 |
+| --- | --- | --- |
+| `400` | `account_id_required` / `invalid_channel` / `invalid_action` | 基础参数无效。 |
+| `400` | `recipient_address_required` / `recipient_profile_url_required` / `recipient_phone_required` | 缺少对应渠道的接收方。 |
+| `400` | `content_subject_required` / `content_text_or_html_required` / `content_text_or_attachment_required` | 缺少对应渠道的内容。 |
+| `400` | `attachment_invalid` / `attachments_invalid` | 附件格式无效。 |
+| `400` | `min_channel_task_interval_seconds_invalid` | 渠道任务间隔不在允许范围内。 |
+| `403` | `permission_denied` | Key 没有单条触达创建权限。 |
+| `413` | `request_payload_too_large` | 请求体超过 12 MB。 |
+| `503` | `task_unavailable` | 任务暂时无法创建。 |

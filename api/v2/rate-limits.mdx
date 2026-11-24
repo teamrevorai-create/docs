@@ -1,0 +1,121 @@
+---
+title: "Rate limits, concurrency, and retries"
+description: "REVOR AI enforces request rate, active-job concurrency, and credits as three independent controls. The API and MCP share account-wide allowances; creating more API keys or changing protocols does not increase them."
+keywords: ["Revor AI", "API v2", "Rate limits, concurrency, and retries"]
+---
+
+REVOR AI enforces request rate, active-job concurrency, and credits as three independent controls. The API and MCP share account-wide allowances; creating more API keys or changing protocols does not increase them.
+
+## Requests per minute (RPM)
+
+RPM is calculated per account and operation type. Each type has its own one-minute window.
+
+| Operation type | Typical endpoints or tools | Free | Starter | Scale | Pro | Enterprise |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| Read | Credits, Connect, prospect-list indexes and details | 60 | 120 | 240 | 800 | 1,200 |
+| Job polling | `GET /jobs/{id}`, `revor_get_job` | 120 | 240 | 500 | 1,000 | 3,000 |
+| Data-task creation | Web research, contacts, customs, prospect-list creation | 2 | 5 | 10 | 20 | 60 |
+| Outreach write | Email, LinkedIn, and WhatsApp outreach or engagement | 5 | 10 | 20 | 30 | 60 |
+
+Cancelling a queued job is treated as a lightweight read/control operation. Customs company-name resolution is currently free, but it starts a data lookup and therefore uses the data-task creation allowance.
+
+## Shared account and API-key limits
+
+Membership RPM is an account-wide ceiling. Calls through REST API, Remote MCP, or different API keys for the same account consume the same allowance for their operation type.
+
+An API key may also have a separate, stricter limit. A request must satisfy both the account and key limits; a key-specific limit cannot raise the membership allowance. If an administrator configures a lower key limit, that lower limit can be reached first.
+
+## Active-job concurrency
+
+Jobs in `queued`, `scheduled`, or `running` state are active. Each job family is counted separately.
+
+| Membership tier | Customs | Research | Prospect lists |
+| --- | ---: | ---: | ---: |
+| Free | 1 | 1 | 1 |
+| Starter | 3 | 2 | 2 |
+| Scale | 5 | 3 | 3 |
+| Pro | 10 | 5 | 3 |
+| Enterprise | 20 | 10 | 5 |
+
+When the concurrency cap is reached, no new job is created or charged. Submit again after an existing job reaches `succeeded`, `failed`, or `cancelled`.
+
+## RPM, concurrency, and credits
+
+SSE connections have separate limits from active jobs. Items and Find More streams share connection allowances. Maximum lifetimes are 15 / 30 / 45 / 60 / 90 minutes for Free / Starter / Scale / Pro / Enterprise. See [Stream prospect items](/api/v2/websets-items-stream) for connection counts and recovery rules. Streams close automatically after completion.
+
+| Control | Purpose | When capacity returns |
+| --- | --- | --- |
+| RPM | Controls request bursts within one minute | When the current rate-limit window ends |
+| Active-job concurrency | Limits long-running jobs queued or executing at once | When an active job reaches a terminal state |
+| Credits | Determines available billable usage | When the account receives more credits |
+
+Passing one control does not bypass the others. For example, an account may still have credits while data-task RPM or active-job concurrency is already full.
+
+## REST API rate-limit headers
+
+REST responses may include the following headers. `X-RateLimit-*` describes an API-key limit, while `X-User-RateLimit-*` describes the membership account limit.
+
+| Header | Description |
+| --- | --- |
+| `X-RateLimit-Limit` | API-key request limit for the current window. |
+| `X-RateLimit-Remaining` | Remaining API-key requests in the current window. |
+| `X-RateLimit-Window-Ms` | API-key window length in milliseconds. |
+| `X-RateLimit-Reset` | Estimated API-key reset time as a Unix timestamp in seconds. |
+| `X-User-RateLimit-Limit` | Account request limit for the current operation type. |
+| `X-User-RateLimit-Remaining` | Remaining account requests for the current operation type. |
+| `X-User-RateLimit-Window-Ms` | Account window length in milliseconds. |
+| `X-User-RateLimit-Reset` | Estimated account reset time as a Unix timestamp in seconds. |
+| `Retry-After` | Minimum number of seconds to wait after a rejection. |
+
+Some `X-RateLimit-*` fields may be absent when no separate key limit is configured. Clients should use the headers actually returned.
+
+## HTTP 429
+
+An account-level rejection returns:
+
+```json Account-level
+{
+  "ok": false,
+  "error": {
+    "code": "api_rate_limit_exceeded",
+    "message": "api_rate_limit_exceeded",
+    "request_id": "req_xxx",
+    "rate_limit_scope": "user"
+  }
+}
+```
+
+For an API-key-level rejection, `code` is `api_key_rate_limit_exceeded` and `rate_limit_scope` is `api_key`.
+
+## Retry guidance
+
+<Steps>
+  <Step title="Wait for Retry-After">
+    After HTTP `429`, wait for `Retry-After` instead of retrying immediately.
+  </Step>
+  <Step title="Exponential backoff">
+    If `Retry-After` is absent, use exponential backoff with a small amount of random jitter.
+  </Step>
+  <Step title="Adjust polling frequency">
+    Poll asynchronous jobs every 2 to 5 seconds in most cases, then reduce frequency for longer jobs.
+  </Step>
+  <Step title="Reuse Idempotency-Key">
+    After a network timeout, reuse the original `Idempotency-Key` when retrying the same creation or outreach operation. Generate a new value for a genuinely new operation.
+  </Step>
+  <Step title="Honor retry info in MCP">
+    MCP clients should honor retry information in tool errors and must not switch protocols or keys to bypass the wait.
+  </Step>
+</Steps>
+
+```ts Retry helper
+const retryAfterSeconds = Number(
+  response.headers.get("Retry-After") || 1
+)
+await new Promise((resolve) =>
+  setTimeout(resolve, retryAfterSeconds * 1000)
+)
+```
+
+<Tip>
+  Rate limiting protects service stability. It does not by itself mean that a job failed or credits were charged. Continue polling only after the business endpoint confirms that a job was created.
+</Tip>

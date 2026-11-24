@@ -1,0 +1,27 @@
+---
+title: "公开网页与企业联系人搜索"
+description: "本页提供两项彼此独立的能力：根据查询词搜索公开网页资料，以及根据企业官网域名搜索联系人。它们不会自动生成包含财务、竞品等所有维度的完整企业调研报告。"
+keywords: ["Revor AI", "API v2", "公开网页与企业联系人搜索"]
+sidebarTitle: "概览"
+---
+
+两个接口都创建异步任务，结果通过任务对象返回。`Idempotency-Key` 是可选的；需要安全重试时建议发送并复用同一个值。
+
+你可以发送 `Prefer: wait=20`。如果任务在等待窗口内结束，接口直接返回 HTTP `200`；否则返回 HTTP `202`，调用方继续轮询 `/api/v2/jobs/{id}`。
+
+## 接口
+
+| 方法 | 路径 | 说明 |
+| --- | --- | --- |
+| `POST` | `/api/v2/research/public-web` | 根据查询词搜索公开网页资料。 |
+| `POST` | `/api/v2/research/contacts` | 根据企业官网域名搜索联系人。 |
+
+<CardGroup cols={2}>
+  <Card title="公开网页研究" icon="globe" href="/cn/api/v2/research-public-web">
+    根据查询词搜索公开网页资料并返回摘要。
+  </Card>
+
+  <Card title="企业联系人搜索" icon="address-book" href="/cn/api/v2/research-contacts">
+    根据已确认的企业官网域名搜索联系人。
+  </Card>
+</CardGroup>

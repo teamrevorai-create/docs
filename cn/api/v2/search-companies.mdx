@@ -1,0 +1,112 @@
+---
+title: "搜索公司"
+description: "用自然语言发现公司候选，返回结构化资料、相关原文片段和来源链接。"
+api: "POST https://revor.ai/api/v2/search/companies"
+authMethod: "bearer"
+playground: "simple"
+keywords:
+  - "Revor AI"
+  - "API v2"
+  - "搜索公司"
+---
+
+## 接口概览
+
+|  |  |
+| --- | --- |
+| 方法 | `POST` |
+| 路径 | `/api/v2/search/companies` |
+| 权限 | 创建需要 `search:write` 和 `search:read`；读取 job 需要 `search:read` |
+| 幂等性 | 通过 `Idempotency-Key` 请求头支持 |
+| 返回 | 带企业条目的异步任务结果 |
+
+## 请求
+
+API 使用 `Idempotency-Key` 请求头进行安全重试。可传 `Prefer: wait=20` 等待结果；终态 HTTP 200，执行中 HTTP 202，使用返回的 job ID 查询 `/api/v2/jobs/{id}`。
+
+### 参数
+
+<ParamField body="query" type="string" required>
+  必填，1-1000 字符。地区、职位、行业等写在自然语言中，不代表严格字段过滤。
+</ParamField>
+
+<ParamField body="limit" default="10" type="integer">
+  整数 1-25，默认 10，表示最多返回数量，不保证足量或全部匹配。
+</ParamField>
+
+<ParamField body="response.detail" default="standard" type="string">
+  `compact` / `standard`，默认 `standard`。
+</ParamField>
+
+<ParamField body="response.include" default="[]" type="string[]">
+  默认 `[]`。公司仅接受空数组。
+</ParamField>
+
+<Warning>
+  未知参数会被拒绝。当前不支持游标分页、任意字段提取或联系方式保证。
+</Warning>
+
+### 请求示例
+
+```bash cURL
+curl -X POST "https://revor.ai/api/v2/search/companies" \
+  -H "Authorization: Bearer sk-revor-REPLACE_ME" \
+  -H "Content-Type: application/json" \
+  -H "Prefer: wait=20" \
+  -d '{
+    "query": "德国制造业公司",
+    "limit": 10,
+    "response": {
+      "detail": "standard",
+      "include": []
+    }
+  }'
+```
+
+## 返回字段
+
+标准公共 job 外壳包含 `id`、`status`、`result`、`error`、`billing`。成功时 `result` 包含 `query`、`returned_count`、`items`。
+
+每条结果包含：
+
+- `id`：仅标识该任务内条目，不是全局企业 ID
+- `target_kind`：`company`
+- `entity`：结构化资料
+- `evidence`：原文片段与来源链接
+
+### 实体字段
+
+<ResponseField name="公司 compact" type="object">
+  `name`、`website`
+</ResponseField>
+
+<ResponseField name="公司 standard" type="object">
+  增加 `description`、`location.country/city/address`、`employee_count`、`founded_year`
+</ResponseField>
+
+<ResponseField name="evidence" type="object">
+  `excerpts` 原文片段、`sources` 来源数组（`url`、`title`）
+</ResponseField>
+
+<Note>
+  缺失标量为 `null`，集合无记录为 `[]`，未请求的扩展字段省略。人数等资料不是实时核验结果。来源页面与实体资料分开，托管资料页不冒充官网。搜索不生成 ICP 分数或验证状态，也不创建名单。
+</Note>
+
+### 行为说明
+
+- **限流：** API 与 MCP 共用会员 `expensive_create` 限流
+- **并发：** 与人物搜索共享搜索任务并发桶
+- 幂等重放和 job 查询不重复收费
+
+## 积分
+
+| 请求数量 | 每次积分 |
+| --- | --: |
+| 1-10 | 3 |
+| 11-25 | 8 |
+
+成功零结果仍收费，搜索执行失败不收费；不足条数不补搜、不按条折算。最终以 `billing.charged_credits` 为准。
+
+## MCP
+
+`revor_search_companies` 使用相同参数并增加 `idempotency_key`。工具可能直接返回终态，否则按 `next_action` 调用 `revor_get_job`。不要重复创建任务来检查进度。

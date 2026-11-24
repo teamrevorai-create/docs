@@ -1,0 +1,167 @@
+---
+title: "预览智能体消息"
+description: "基于智能体配置生成单条预览消息，返回公共任务。"
+api: "POST https://revor.ai/api/v2/agents/preview"
+authMethod: "bearer"
+playground: "simple"
+keywords:
+  - "Revor AI"
+  - "API v2"
+  - "预览智能体消息"
+---
+
+在发送前基于智能体配置预览单条消息。付费生成，返回公共 job，通过 `GET /api/v2/jobs/{id}` 查询结果。
+
+## 接口概览
+
+|  |  |
+| --- | --- |
+| 方法 | `POST` |
+| 路径 | `/api/v2/agents/preview` |
+| 权限 | `agents:write` |
+| 幂等性 | 需要 `Idempotency-Key` |
+| 限流桶 | `expensive_create` |
+| 返回 | 公共 job，通过 `GET /api/v2/jobs/{id}` 查询 |
+
+```bash cURL
+curl -X POST "https://revor.ai/api/v2/agents/preview" \
+  -H "Authorization: Bearer sk-revor-REPLACE_ME" \
+  -H "Idempotency-Key: agent-preview-001" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "agent_id": "agent-uuid",
+    "channel": "email",
+    "locale": "zh",
+    "lead": {
+      "name": "Alice",
+      "title": "Purchasing Manager",
+      "company": "Example Manufacturing"
+    },
+    "research_enabled": true,
+    "config": {
+      "send_language": "en"
+    }
+  }'
+```
+
+```json 请求体
+{
+  "agent_id": "智能体 UUID",
+  "channel": "email",
+  "locale": "zh",
+  "lead": {
+    "name": "Alice",
+    "title": "Purchasing Manager",
+    "company": "Example Manufacturing"
+  },
+  "research_enabled": true,
+  "config": {
+    "send_language": "en"
+  }
+}
+```
+
+## 请求参数
+
+<ParamField body="agent_id" type="string" required>
+  要预览的智能体 UUID。
+</ParamField>
+
+<ParamField body="channel" type="string" required>
+  仅支持 `email`、`linkedin` 或 `whatsapp`。
+</ParamField>
+
+<ParamField body="locale" type="string">
+  默认 `en`。
+</ParamField>
+
+<ParamField body="lead" type="object">
+  需提供 `company`。
+
+  `lead` 与 `lead_cursor` 二选一。
+</ParamField>
+
+<ParamField body="lead_cursor" type="string">
+  现有预览联系人 cursor。会校验归属。
+</ParamField>
+
+<ParamField body="research_enabled" type="boolean">
+  省略时默认使用保存的调研预览开关。
+</ParamField>
+
+<ParamField body="config" type="object">
+  可选的临时覆盖字段，仅本次请求生效。
+
+  <Expandable title="所有支持的覆盖字段">
+    - `active_system_prompt`
+    - `active_goal_prompt`
+    - `active_reference_template`
+    - `reference_template_strict`
+    - `extra_context`
+    - `sender_name`
+    - `sender_title`
+    - `sender_company`
+    - `sender_company_website`
+    - `sender_company_summary`
+    - `sender_bio`
+    - `send_language`
+    - `style_tags`
+    - `content_generation_mode`
+    - `content_input`
+    - `goal_type`
+  </Expandable>
+</ParamField>
+
+## 响应
+
+```json 202
+{
+  "ok": true,
+  "request_id": "req_xxx",
+  "item": {
+    "id": "job-uuid",
+    "status": "queued",
+    "type": "agent_preview"
+  }
+}
+```
+
+## 返回结果
+
+成功的 `item.result` 包含:
+
+- `agent_id`
+- `channel`
+- `messages`
+- `research_run_id`
+- `agent_version`
+
+`item.billing` 返回计费结果。邮件消息保留 `subject` 和 `text`。
+
+仅首次执行前允许取消，开始后包括等待重试时均不可取消。
+
+## 行为说明
+
+- 智能体和 cursor 均校验归属。
+- 普通生成消费一次普通智能触达额度。
+- 调研生成消费一次研究触达额度，已包含调研和写信，不叠扣普通额度。
+- Meta WhatsApp 模板使用原模板结果，消费普通额度。
+- 明确失败退回预扣额度。
+- 账务不确定时保留批次待恢复，不重复生成或盲目退款。
+
+<Warning>
+  预览不会发布智能体、发送消息，也不会改变生成版本。
+</Warning>
+
+## 错误码
+
+| HTTP | 错误码 | 含义 |
+| --- | --- | --- |
+| `400` | `external_api_preview_input_invalid` | 参数错误 |
+| `403` | `permission_denied` | 缺少对应权限 |
+
+异步归属校验、额度不足和生成失败见任务 error。
+
+## MCP 工具
+
+`revor_preview_agent_message`

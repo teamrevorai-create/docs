@@ -1,0 +1,113 @@
+---
+title: "修改联系人集合"
+description: "整体替换指定行指定列的联系人集合。"
+api: "PATCH https://revor.ai/api/v2/websets/{websetId}/items/{itemId}/contacts/{fieldKey}"
+authMethod: "bearer"
+playground: "simple"
+keywords:
+  - "Revor AI"
+  - "API v2"
+  - "修改联系人集合"
+---
+
+整体替换指定行指定列的联系人集合。PATCH 操作会完整覆盖原联系人列表。
+
+## 接口概览
+
+|  |  |
+| --- | --- |
+| 方法 | `PATCH` |
+| 路径 | `/api/v2/websets/{websetId}/items/{itemId}/contacts/{fieldKey}` |
+| 权限 | `prospects.contacts:write` |
+| 幂等性 | 通过 `Idempotency-Key` 请求头实现 |
+
+## 路径参数
+
+<ParamField path="websetId" type="string" required>
+  表格 UUID。
+</ParamField>
+
+<ParamField path="itemId" type="string" required>
+  行 UUID。
+</ParamField>
+
+<ParamField path="fieldKey" type="string" required>
+  联系人列 key。
+</ParamField>
+
+## 请求体
+
+```json 替换联系人
+{
+  "contacts": [
+    {
+      "full_name": "Alex",
+      "title": "Sales",
+      "email": ["alex@example.com"]
+    }
+  ]
+}
+```
+
+<ParamField body="contacts" type="object[]" required>
+  联系人对象数组。整体替换该行该列联系人。
+</ParamField>
+
+<Warning>
+  PATCH **整体替换**该行该列联系人；省略 `contacts` 报错，显式 `[]` 清空。先读再改并保留其他联系人；人工联系人可传 `id`/`contact_key` 保持身份。
+</Warning>
+
+## 各来源联系人字段格式
+
+<AccordionGroup>
+  <Accordion title="Snovio 联系人">
+    - `email`
+    - `firstName`
+    - `lastName`
+    - `fullName`
+    - `position`
+    - `linkedin`
+    - `status`
+  </Accordion>
+
+  <Accordion title="其他来源">
+    - `id`
+    - `contact_key`
+    - `contact_kind`
+    - `full_name`
+    - `title`
+    - `company_name`
+
+    渠道值支持字符串或字符串数组。
+  </Accordion>
+
+  <Accordion title="各来源支持的渠道">
+    - **imported_contacts** - `email`、`whatsapp`、`phone`、`linkedin`
+    - **官网联系方式** - `email`、`whatsapp`、`phone`
+    - **自定义联系人列** - `email`、`whatsapp`、`phone`、`linkedin`、`facebook`、`instagram`、`custom`
+  </Accordion>
+</AccordionGroup>
+
+不支持的字段会被拒绝。读取时 `contacts` 与 `channels` 分开投影，`channels.contact_id` 关联 `contacts.id`。
+
+## 请求示例
+
+```bash cURL
+curl -X PATCH "https://revor.ai/api/v2/websets/webset-uuid/items/item-uuid/contacts/snovio_key_contacts" \
+  -H "Authorization: Bearer sk-revor-REPLACE_ME" \
+  -H "Idempotency-Key: contacts-patch-001" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "contacts": [
+      {
+        "full_name": "Alex",
+        "title": "Sales",
+        "email": ["alex@example.com"]
+      }
+    ]
+  }'
+```
+
+<Tip>
+  保存后异步同步完成时间不等于接口响应时间。
+</Tip>

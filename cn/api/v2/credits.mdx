@@ -1,0 +1,57 @@
+---
+title: "查询积分余额"
+description: "返回 API Key 所属用户当前可使用的总积分。该接口为同步只读接口，不创建任务，也不消耗积分。"
+keywords: ["Revor AI", "API v2", "查询积分余额"]
+api: "GET https://revor.ai/api/v2/credits"
+authMethod: "bearer"
+playground: "simple"
+---
+
+|  |  |
+| --- | --- |
+| 方法 | `GET` |
+| 权限 | 积分读取 |
+| 限流 | 标准限流 |
+| 返回 | 积分余额 |
+
+## 请求示例
+
+```bash cURL
+curl --get \
+  --url "https://revor.ai/api/v2/credits" \
+  --header "Authorization: Bearer sk-revor-REPLACE_ME"
+```
+
+## 响应示例
+
+```json 200
+{
+  "ok": true,
+  "request_id": "req_xxx",
+  "available_credits": 1280,
+  "as_of": "2026-08-25T08:00:00.000Z"
+}
+```
+
+## 响应字段
+
+<ResponseField name="available_credits" type="number">
+  当前可用积分，最低为 `0`。
+</ResponseField>
+
+<ResponseField name="as_of" type="ISO 8601 string">
+  本次余额计算完成的时间。
+</ResponseField>
+
+<Note>
+  `available_credits` 已包含积分分组、有效期和订阅状态等规则。客户端不应自行汇总积分流水来替代该值。
+</Note>
+
+## 错误
+
+| HTTP | Code | 说明 |
+| --- | --- | --- |
+| `401` | `api_key_invalid` | API Key 无效。 |
+| `403` | `permission_denied` | Key 不具有积分读取权限。 |
+| `429` | `api_rate_limit_exceeded` | 请求触发限流。 |
+| `500` | `credits_query_failed` | 积分查询失败；不要把该错误解释成余额为零。 |

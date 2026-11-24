@@ -1,0 +1,45 @@
+---
+title: "获取已有调研列"
+description: "列出指定表格上已存在的调研列，包括系统列和自定义列。"
+api: "GET https://revor.ai/api/v2/websets/{websetId}/research/columns"
+authMethod: "bearer"
+playground: "simple"
+keywords:
+  - "Revor AI"
+  - "API v2"
+  - "获取已有调研列"
+---
+
+列出指定表格上已存在的调研列，包括系统联系人列和自定义调研列。可用于确认 `field_key` 后再调用联系人编辑接口。
+
+## 接口概览
+
+|  |  |
+| --- | --- |
+| 方法 | `GET` |
+| 路径 | `/api/v2/websets/{websetId}/research/columns` |
+| 权限 | `websets.research:read` |
+
+## 路径参数
+
+<ParamField path="websetId" type="string" required>
+  表格 UUID。
+</ParamField>
+
+## 请求示例
+
+```bash cURL
+curl "https://revor.ai/api/v2/websets/webset-uuid/research/columns" \
+  -H "Authorization: Bearer sk-revor-REPLACE_ME"
+```
+
+## 响应
+
+返回调研列列表。常见列 key 包括：
+
+- `imported_contacts`
+- `snovio_key_contacts`
+- `company_social_contacts`
+- 自定义调研列的 `field_key`
+
+普通标量列不能当联系人集合编辑。查询结果可帮助确定 PATCH 联系人接口可用的 `fieldKey`。

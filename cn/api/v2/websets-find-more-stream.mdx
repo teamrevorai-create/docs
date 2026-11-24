@@ -1,0 +1,90 @@
+---
+title: "实时订阅 Find More"
+description: "原入口 GET /api/v2/websets/{webset_id}/find-more/stream 继续支持，参数、返回字段和权限均保持一致。两个 URL 执行同一操作。"
+keywords: ["Revor AI", "API v2", "实时订阅 Find More"]
+api: "GET https://revor.ai/api/v2/prospect-lists/{webset_id}/expand/stream"
+authMethod: "bearer"
+playground: "simple"
+---
+
+订阅一次指定 Find More job 的状态、策略和 Items 增量。需要 `websets:read` 权限。
+
+<Note>
+  原入口 `GET /api/v2/websets/{webset_id}/find-more/stream` 继续支持，参数、返回字段和权限均保持一致。两个 URL 执行同一操作。
+</Note>
+
+## 概览
+
+|  |  |
+| --- | --- |
+| 方法 | `GET` |
+| 路径 | `https://revor.ai/api/v2/prospect-lists/\{webset_id\}/expand/stream` |
+| 权限 | `websets:read` |
+
+## Query 参数
+
+<ParamField query="job_id" type="string" required>
+  Find More 响应中的 `item.id`。
+</ParamField>
+
+<ParamField query="cursor" type="number">
+  与 revision 成对。Find More 启动前快照的 `stream_cursor`。
+</ParamField>
+
+<ParamField query="items_revision" type="number">
+  与 cursor 成对。Find More 启动前快照的 `items_revision`。
+</ParamField>
+
+<ParamField query="match" default="qualified" type="string">
+  默认 `qualified`。
+</ParamField>
+
+<ParamField query="detail" default="compact" type="string">
+  `compact`、`standard` 或 `full`；默认 `compact`，与初始快照保持一致。
+</ParamField>
+
+必须绑定本次 `job_id`。服务端会等待该 job 对应的新挖掘轮次真正出现，不会把上一轮残留的 `completed` 误判为本轮完成。
+
+## 请求示例
+
+```bash cURL
+curl -N "https://revor.ai/api/v2/prospect-lists/WEBSET_ID/expand/stream?job_id=JOB_ID&cursor=289&items_revision=18&match=qualified" \
+  -H "Authorization: Bearer sk-revor-REPLACE_ME" \
+  -H "Accept: text/event-stream"
+```
+
+## 事件
+
+该接口包含 [Items SSE](/cn/api/v2/websets-items-stream) 的 `ready`、`webset.state`、`webset.strategy`、`items.changed`、`reset`、`complete`、`reconnect` 和 `error`，并增加以下事件。
+
+`ready`、`webset.state` 和 `complete` 同样包含 `progress`、`failure`。详细字段、截断与断点恢复规则见 [Items SSE](/cn/api/v2/websets-items-stream)。
+
+### `find_more.state`
+
+```json find_more.state
+{
+  "webset_id": "webset-uuid",
+  "job_id": "job-uuid",
+  "job_status": "running",
+  "run_observed": true
+}
+```
+
+`run_observed=true` 表示本次 Find More 的新轮次已经被观察到。
+
+### `find_more.failed`
+
+当 job 在启动新轮次之前失败或取消时发送，随后关闭连接。若新轮次已经启动，最终结果以 `items.changed` 和 `complete` 为准。
+
+```json find_more.failed
+{
+  "webset_id": "webset-uuid",
+  "job_id": "job-uuid",
+  "job_status": "failed",
+  "error_code": "webset_find_more_failed"
+}
+```
+
+<Note>
+  `ready`、`complete` 和 `reconnect` 会额外包含 `find_more_job_id`。收到 `complete` 后即可结束；收到 `reset` 时重新读取完整 Items 快照。
+</Note>

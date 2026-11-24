@@ -1,0 +1,77 @@
+---
+title: "Update outreach draft"
+description: "Edit a pending outreach draft subject, body, or schedule."
+api: "PATCH https://revor.ai/api/v2/websets/{websetId}/smart-outreach/drafts/{targetId}"
+authMethod: "bearer"
+playground: "simple"
+keywords:
+  - "Revor AI"
+  - "API v2"
+  - "Update outreach draft"
+---
+
+Edit a pending outreach draft. Check `editable` and `editable_reason` before editing.
+
+## Overview
+
+| | |
+| --- | --- |
+| Method | `PATCH` |
+| Path | `/api/v2/websets/{websetId}/smart-outreach/drafts/{targetId}` |
+| Permission | `outreach.plans:write` |
+| Idempotency | Required via `Idempotency-Key` header |
+| Returns | Updated draft content |
+
+## Path parameters
+
+<ParamField path="websetId" type="string" required>
+  Table UUID.
+</ParamField>
+
+<ParamField path="targetId" type="string" required>
+  Target UUID.
+</ParamField>
+
+## Request body
+
+<ParamField body="subject" type="string" required>
+  Draft subject line.
+</ParamField>
+
+<ParamField body="body" type="string" required>
+  Draft body content.
+</ParamField>
+
+<ParamField body="schedule" type="object">
+  Optional new schedule. Contains `local_datetime` and `timezone`. Omit to keep the existing schedule.
+</ParamField>
+
+```json Request body
+{
+  "subject": "Subject line",
+  "body": "Email body",
+  "schedule": {
+    "local_datetime": "2026-12-01T09:00",
+    "timezone": "Asia/Shanghai"
+  }
+}
+```
+
+## Behavior
+
+Check `editable` and `editable_reason` before editing. Drafts that are already sending or sent cannot be edited. Editing affects only the current pending draft, not historical or future rounds.
+
+```bash cURL
+curl -X PATCH "https://revor.ai/api/v2/websets/{websetId}/smart-outreach/drafts/{targetId}" \
+  -H "Authorization: Bearer sk-revor-REPLACE_ME" \
+  -H "Idempotency-Key: draft-update-001" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "subject": "Subject line",
+    "body": "Email body",
+    "schedule": {
+      "local_datetime": "2026-12-01T09:00",
+      "timezone": "Asia/Shanghai"
+    }
+  }'
+```

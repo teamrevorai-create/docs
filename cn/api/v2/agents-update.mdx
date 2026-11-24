@@ -1,0 +1,174 @@
+---
+title: "更新智能体配置"
+description: "对指定智能体进行局部编辑，支持版本保护防止并发覆盖。"
+api: "PATCH https://revor.ai/api/v2/agents/{agentId}"
+authMethod: "bearer"
+playground: "simple"
+keywords:
+  - "Revor AI"
+  - "API v2"
+  - "更新智能体配置"
+---
+
+对指定智能体进行局部编辑。所有修改必须提供最近一次 GET 返回的 `updated_at` 作为 `expected_updated_at`，过期版本将被拒绝。
+
+## 接口概览
+
+|  |  |
+| --- | --- |
+| 方法 | `PATCH` |
+| 路径 | `/api/v2/agents/{agentId}` |
+| 权限 | `agents:write` |
+| 限流桶 | `outreach_write` |
+| 幂等性 | 内部由版本校验保证 |
+| 返回 | `item`，含本次保存后的版本 |
+
+## 路径参数
+
+<ParamField path="agentId" type="string" required>
+  智能体 UUID。
+</ParamField>
+
+## 请求体
+
+<ParamField body="expected_updated_at" type="string" required>
+  最近一次 GET 返回的 `updated_at`，原样传递。
+</ParamField>
+
+### 可编辑字段
+
+省略字段保持不变；可空文本传 `null` 清空；数组传 `[]` 清空。
+
+<AccordionGroup>
+  <Accordion title="基础">
+    - `name`
+    - `description`
+    - `status`
+    - `channel_scope`
+    - `style_tags`
+    - `tags`
+  </Accordion>
+
+  <Accordion title="公司与发件人">
+    - `sender_name`
+    - `sender_title`
+    - `sender_company_name`
+    - `sender_company_website`
+    - `sender_company_summary`
+    - `sender_bio`
+    - `sender_linkedin_url`
+    - `sender_avatar_url`
+    - `source_company_url`
+  </Accordion>
+
+  <Accordion title="内容">
+    - `goal_type`
+    - `icebreaker_goal_prompt`
+    - `autoreply_goal_prompt`
+    - `icebreaker_system_prompt`
+    - `autoreply_system_prompt`
+    - `icebreaker_reference_template`
+    - `autoreply_reference_template`
+    - `reference_template_strict`
+    - `icebreaker_content_mode`
+    - `icebreaker_content`
+    - `extra_context`
+  </Accordion>
+
+  <Accordion title="时间">
+    - `send_language`
+    - `timezone`
+    - `work_time_preset`
+    - `send_time_start`
+    - `send_time_end`
+
+    时间为 `HH:mm`；时区须为有效时区。
+  </Accordion>
+
+  <Accordion title="渠道策略">
+    - `linkedin_enabled`
+    - `whatsapp_enabled`
+    - `email_enabled`
+    - `linkedin_auto_engagement`
+    - `autoreply_block_prior_platform_conversation`
+    - `linkedin`/`whatsapp`/`email` 的 `interval_secs`、`daily_limit`
+  </Accordion>
+</AccordionGroup>
+
+### 设置对象
+
+<AccordionGroup>
+  <Accordion title="Knowledge settings">
+    `knowledge_settings` 支持 `kb_ids`，仅本人或公开知识库。
+  </Accordion>
+
+  <Accordion title="Autoreply stop settings">
+    `autoreply_stop_settings` 支持信息收集规则、终止/转人工规则和最大回复轮数。
+  </Accordion>
+
+  <Accordion title="Autoreply first reply settings">
+    `autoreply_first_reply_settings` 支持 `fixed_welcome_enabled`、`fixed_welcome_message`。
+  </Accordion>
+</AccordionGroup>
+
+这三个设置对象按公开子字段局部合并，数组整体替换，保留原有私有设置。
+
+```bash cURL
+curl -X PATCH "https://revor.ai/api/v2/agents/{agentId}" \
+  -H "Authorization: Bearer sk-revor-REPLACE_ME" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "expected_updated_at": "2026-11-13T04:44:50.096+00:00",
+    "name": "客户开发助手",
+    "description": null
+  }'
+```
+
+```json 请求体
+{
+  "expected_updated_at": "2026-11-13T04:44:50.096+00:00",
+  "name": "客户开发助手",
+  "description": null
+}
+```
+
+## 响应
+
+```json 200
+{
+  "ok": true,
+  "request_id": "req_xxx",
+  "item": {
+    "id": "agent-uuid",
+    "name": "客户开发助手",
+    "updated_at": "2026-11-13T05:00:00.000+00:00"
+  }
+}
+```
+
+## 行为说明
+
+- 过期版本返回 `409`；重新读取并确认差异后再决定是否提交，不应自动覆盖。
+- 仅含版本而无修改字段的请求、未知字段和错误类型返回 `400`。
+- 成功返回 `item`，包含本次保存后的版本。
+- V1/V2 内容约束、必填项、限额规范化沿用现有服务。
+- 模式、生成版本不可通过此接口转换。
+- 新增独立内容草稿 `icebreaker_ai_content`、`icebreaker_fixed_template` 可编辑。
+- 附件上传、模型高级设置、`channel_settings` 整体对象不属于本批公共契约；未知字段明确拒绝。
+
+<Note>
+  数据库内部 metadata、抓取快照及凭据不在公共响应中。
+</Note>
+
+## 错误码
+
+| HTTP | 错误码 | 含义 |
+| --- | --- | --- |
+| `400` | `agent_input_invalid` | 公共参数不符合契约 |
+| `400` | `agent_configuration_invalid` | 违反现有智能体业务校验 |
+| `403` | `permission_denied` | 缺少对应权限 |
+| `404` | `agent_not_found` | 智能体不存在、已删除或不属于当前用户 |
+| `409` | `agent_config_conflict` | 版本过期或并发修改 |
+| `409` | `agent_knowledge_base_not_found` | 关联知识库不可用 |
+| `409` | `agent_account_already_bound` | 账号占用冲突 |
+| `500` | `agent_operation_failed` | 操作失败，需读取当前配置核对是否已保存 |

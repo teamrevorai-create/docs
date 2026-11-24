@@ -1,0 +1,246 @@
+---
+title: "Create import"
+description: "Import structured records directly or initialize a file upload for CSV/XLSX."
+api: "POST https://revor.ai/api/v2/imports"
+authMethod: "bearer"
+playground: "simple"
+keywords:
+  - "Revor AI"
+  - "API v2"
+  - "Create import"
+---
+
+Import structured records directly, or initialize a file upload for CSV or XLSX. For records the import completes in a single call. For files, follow up with the upload step and then complete the import.
+
+## Overview
+
+| | |
+| --- | --- |
+| Method | `POST` |
+| Path | `/api/v2/imports` |
+| Permission | `prospects.imports:write` |
+| Idempotency | Required via `Idempotency-Key` header |
+| Returns | Import run with billing and row counts (records), or upload URL (file) |
+
+## Records mode: direct data transfer
+
+When data is already structured, POST `/imports` with `input_mode: "records"`. No file upload or completion call is needed.
+
+### Request body
+
+<ParamField body="input_mode" type="string" required>
+  Must be `"records"`.
+</ParamField>
+
+<ParamField body="entity_type" type="string" required>
+  `"company"` or `"person"`.
+</ParamField>
+
+<ParamField body="name" type="string">
+  Table name. Optional when appending with `webset_id`.
+</ParamField>
+
+<ParamField body="webset_id" type="string">
+  Existing table UUID to append to. `name` is optional when appending.
+</ParamField>
+
+<ParamField body="records" type="object[]" required>
+  Array of record objects. See <a href="#company-fields">Company fields</a> and <a href="#person-and-contact-fields">Person and contact fields</a>.
+</ParamField>
+
+```json Request body
+{
+  "input_mode": "records",
+  "entity_type": "company",
+  "name": "Industrial suppliers",
+  "records": [
+    {
+      "external_id": "supplier-001",
+      "company": {
+        "name": "Example",
+        "website": "https://example.com"
+      },
+      "contacts": [
+        {
+          "full_name": "Alex",
+          "title": "Sales",
+          "email": ["alex@example.com"]
+        }
+      ]
+    }
+  ]
+}
+```
+
+### Company fields
+
+Each company record must include at least `name` or `website`.
+
+- `name`
+- `website`
+- `description`
+- `external_id`
+- `email`
+- `phone`
+- `linkedin_url`
+
+### Person and contact fields
+
+Each person record must include at least `full_name` or one contact channel. Contacts nested within a company follow the same field set.
+
+- `full_name`
+- `first_name`
+- `last_name`
+- `title`
+- `location`
+- `email`
+- `phone`
+- `whatsapp`
+- `linkedin_url`
+
+<Tip>
+  Channels are arrays of strings with a maximum of 10 entries per field. Invalid channel values reject the entire batch.
+</Tip>
+
+### Limits and behavior
+
+- **5,000 records** per call
+- **2 MiB** UTF-8 JSON per call
+- **10,000 nested contacts** per call
+- **500 contacts** maximum per row
+- Each nested contact must include at least one contact channel
+- Split larger data into batches appended to the same table
+- Give each new batch a new idempotency key
+- Retry the exact same batch with its original key
+
+### Billing
+
+Each batch costs `ceil(inserted_rows / 100)` credits, which means one credit per started 100 newly inserted entities. Zero new entities costs zero.
+
+- Duplicate rows are free
+- Merging existing entities is free
+- Adding contacts to existing entities is free
+- Exact retries replay the original receipt without charging again
+
+The response includes `billing_run_id` and `charged_credits`. Insufficient balance returns HTTP 402 with error code `prospect_import_insufficient_credits`; data and billing roll back together. After adding credits, retry with the original key and unchanged request. REST and MCP use the same billing rules.
+
+### Merging and deduplication
+
+Rows merge by one of the following, in priority order:
+
+- Explicit `item_id`
+- `external_id`
+- Company website domain
+- Person email or LinkedIn URL
+
+Names alone never merge across batches. Existing nonempty fields and contact settings are preserved; new contacts and channels are added.
+
+## File upload mode
+
+For CSV or XLSX files up to 10 MiB, use `POST /imports` to request a signed upload URL.
+
+### Request body
+
+<ParamField body="file_name" type="string" required>
+  Name of the file being uploaded.
+</ParamField>
+
+<ParamField body="content_type" type="string" required>
+  MIME type of the file.
+</ParamField>
+
+<ParamField body="size_bytes" type="integer" required>
+  File size in bytes.
+</ParamField>
+
+<ParamField body="locale" type="string">
+  Optional locale: `en` or `zh`.
+</ParamField>
+
+### Response
+
+```json 200
+{
+  "id": "import-run-uuid",
+  "webset_id": "target-table-uuid",
+  "upload_url": "https://storage.signed.url/...",
+  "method": "PUT",
+  "expires_in": 600
+}
+```
+
+- `id` - import run ID
+- `webset_id` - target table ID
+- `upload_url` - signed storage URL
+- `method` - HTTP method for upload (usually `PUT`)
+- `expires_in` - URL expiration time in seconds
+
+### File upload flow
+
+1. Call `POST /imports` with `file_name`, `content_type`, `size_bytes`, and optional `locale`.
+2. PUT the raw file bytes to `upload_url`. Do not forward the API key to the storage URL.
+3. Call `POST /imports/{runId}/complete` with `source_kind`, `file_name`, and `declared_size_bytes`.
+4. Poll `GET /imports/{runId}` for progress and read `webset_ids`.
+
+<Warning>
+  Init and complete require separate `Idempotency-Key` values. Reuse each key for retries of the same step. Do not reuse the same key across different steps.
+</Warning>
+
+## Response fields (records mode)
+
+The response `item` contains:
+
+- `id` - import run ID
+- `webset_id` - target table ID
+- `source_kind` - `"records"`
+- `status` - `"completed"`
+- `received_rows`
+- `inserted_rows`
+- `merged_rows`
+- `added_contacts`
+- `added_channels`
+- `items_revision`
+
+The response does not echo submitted records. Read table rows through the existing paginated Websets API. MCP exposes the same operation as `revor_import_prospects`, with `idempotency_key` in tool arguments.
+
+<Warning>
+  A timeout does not mean the task failed. Retry with the original idempotency key and unchanged request. Do not change the key and create duplicate tables.
+</Warning>
+
+## Errors
+
+| Error code | Meaning |
+| --- | --- |
+| `prospect_import_identity_conflict` | Conflicting identities point to different records |
+| `prospect_import_target_busy` | The target table has an active import |
+| `prospect_import_insufficient_credits` | Not enough credits for this batch (HTTP 402) |
+
+Invalid input or any write failure rolls back the whole batch.
+
+```bash cURL
+curl -X POST "https://revor.ai/api/v2/imports" \
+  -H "Authorization: Bearer sk-revor-REPLACE_ME" \
+  -H "Idempotency-Key: import-batch-001" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "input_mode": "records",
+    "entity_type": "company",
+    "name": "Industrial suppliers",
+    "records": [
+      {
+        "external_id": "supplier-001",
+        "company": {
+          "name": "Example",
+          "website": "https://example.com"
+        },
+        "contacts": [
+          {
+            "full_name": "Alex",
+            "title": "Sales",
+            "email": ["alex@example.com"]
+          }
+        ]
+      }
+    ]
+  }'
+```

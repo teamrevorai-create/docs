@@ -1,0 +1,221 @@
+---
+title: "创建导入任务"
+description: "直接导入结构化数据或申请文件上传，返回导入任务对象与上传地址。"
+api: "POST https://revor.ai/api/v2/imports"
+authMethod: "bearer"
+playground: "simple"
+keywords:
+  - "Revor AI"
+  - "API v2"
+  - "创建导入任务"
+---
+
+创建导入任务，支持直接传输结构化数据（`records` 模式）或申请文件上传（`file` 模式）。直接传输数据时无需后续上传和 complete 步骤。
+
+## 接口概览
+
+|  |  |
+| --- | --- |
+| 方法 | `POST` |
+| 路径 | `/api/v2/imports` |
+| 权限 | `prospects.imports:write` |
+| 幂等性 | 通过 `Idempotency-Key` 请求头实现 |
+| 返回 | 导入任务对象，含账单与行数统计 |
+
+## 请求体
+
+<ParamField body="input_mode" type="string" required>
+  `"records"` 表示直接传输数据；`"file"` 表示申请文件上传。
+</ParamField>
+
+### 文件上传模式
+
+`input_mode` 为 `"file"` 时提供以下字段：
+
+<ParamField body="file_name" type="string" required>
+  文件名。
+</ParamField>
+
+<ParamField body="content_type" type="string" required>
+  文件 MIME 类型。
+</ParamField>
+
+<ParamField body="size_bytes" type="number" required>
+  文件大小（字节）。
+</ParamField>
+
+<ParamField body="locale" type="string">
+  可选，`"en"` 或 `"zh"`。
+</ParamField>
+
+返回：
+
+- `id` - 导入任务 ID
+- `webset_id` - 目标表格 ID
+- `upload_url` - 签名上传地址
+- `method` - 上传 HTTP 方法（通常为 `PUT`）
+- `expires_in` - 地址过期秒数
+
+### 直接传输数据模式
+
+`input_mode` 为 `"records"` 时提供以下字段：
+
+<ParamField body="entity_type" type="string" required>
+  `"company"` 或 `"person"`。
+</ParamField>
+
+<ParamField body="name" type="string">
+  表格名称。追加数据时若传了 `webset_id`，可省略。
+</ParamField>
+
+<ParamField body="webset_id" type="string">
+  要追加的已有表格 UUID。追加时 `name` 可选。
+</ParamField>
+
+<ParamField body="records" type="object[]" required>
+  记录对象数组。字段见下文列表。
+</ParamField>
+
+## 企业字段
+
+每行企业至少提供名称或官网。
+
+- `name`
+- `website`
+- `description`
+- `external_id`
+- `email`
+- `phone`
+- `linkedin_url`
+
+## 人物及联系人字段
+
+每行人物至少提供姓名或一条联系渠道。企业下嵌套联系人使用同一套字段。
+
+- `full_name`
+- `first_name`
+- `last_name`
+- `title`
+- `location`
+- `email`
+- `phone`
+- `whatsapp`
+- `linkedin_url`
+
+<Tip>
+  渠道值使用字符串数组，每种渠道最多 10 个；格式无效会拒绝整批。
+</Tip>
+
+## 请求示例
+
+```bash cURL
+curl -X POST "https://revor.ai/api/v2/imports" \
+  -H "Authorization: Bearer sk-revor-REPLACE_ME" \
+  -H "Idempotency-Key: import-001" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "input_mode": "records",
+    "entity_type": "company",
+    "name": "工业供应商",
+    "locale": "zh",
+    "records": [
+      {
+        "external_id": "supplier-001",
+        "company": {
+          "name": "Example",
+          "website": "https://example.com"
+        },
+        "contacts": [
+          {
+            "full_name": "Alex",
+            "title": "Sales",
+            "email": ["alex@example.com"]
+          }
+        ]
+      }
+    ]
+  }'
+```
+
+## 限制与行为
+
+- 单批最多 **5,000 行**
+- 单批最多 **2 MiB** UTF-8 JSON
+- 单批最多 **10,000 个嵌套联系人**
+- 每行最多 **500 个联系人**
+- 每个嵌套联系人至少提供一种联系渠道
+- 较大数据按批追加到同一个 `webset_id`
+- 每批使用独立幂等键
+- 同批重试保留原幂等键
+
+## 计费
+
+每批按实际新增实体数扣积分：`ceil(inserted_rows / 100)`，即每新增 100 条收 1 积分，不足 100 条按 1 积分；零新增不收费。
+
+- 重复行免费
+- 合并已有实体免费
+- 补充已有实体的联系人免费
+- 原幂等键重试不重复收费
+
+响应包含 `billing_run_id` 和 `charged_credits`。余额不足返回 HTTP 402，错误码 `prospect_import_insufficient_credits`，数据和积分一起回滚；充值后可用原键和原请求重试。REST 与 MCP 计费规则相同。
+
+## 去重与合并
+
+按以下优先级合并，优先级从高到低：
+
+- 显式 `item_id`
+- `external_id`
+- 企业官网域名
+- 人物邮箱或 LinkedIn URL
+
+仅有名称时不跨批猜测合并。已有非空字段和联系人设置保留，新的联系人和渠道增量加入。
+
+## 错误码
+
+| 错误码 | 含义 |
+| --- | --- |
+| `prospect_import_identity_conflict` | 多个身份指向不同记录 |
+| `prospect_import_target_busy` | 目标表格仍在导入中 |
+| `prospect_import_insufficient_credits` | 余额不足（HTTP 402） |
+
+校验或写入失败会整批回滚。
+
+## 响应
+
+```json 200
+{
+  "item": {
+    "id": "import-uuid",
+    "webset_id": "webset-uuid",
+    "source_kind": "records",
+    "status": "completed",
+    "received_rows": 1,
+    "inserted_rows": 1,
+    "merged_rows": 0,
+    "added_contacts": 1,
+    "added_channels": 1,
+    "items_revision": 1,
+    "billing_run_id": "billing-uuid",
+    "charged_credits": 1
+  }
+}
+```
+
+响应 `item` 包含：
+
+- `id` - 导入任务 ID
+- `webset_id` - 目标表格 ID
+- `source_kind` - `"records"`
+- `status` - `"completed"`
+- `received_rows` - 接收行数
+- `inserted_rows` - 新增行数
+- `merged_rows` - 合并行数
+- `added_contacts` - 新增联系人数
+- `added_channels` - 新增渠道数
+- `items_revision`
+
+响应不回传整批数据。通过现有名单分页接口查看结果。MCP 对应 `revor_import_prospects`，在工具参数中提供 `idempotency_key`。
+
+<Warning>
+  超时不代表任务失败。超时后用原幂等键和原始请求重试，不要换键重复建表。
+</Warning>

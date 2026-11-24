@@ -1,0 +1,56 @@
+---
+title: "Get research run"
+description: "Get progress or current results of a research run."
+api: "GET https://revor.ai/api/v2/websets/{websetId}/research/runs/{runId}"
+authMethod: "bearer"
+playground: "simple"
+keywords:
+  - "Revor AI"
+  - "API v2"
+  - "Get research run"
+---
+
+Get the progress and results of an active or completed research run. Poll with `page`, `limit` (maximum 100), and `view=progress` or `view=results`.
+
+## Overview
+
+| | |
+| --- | --- |
+| Method | `GET` |
+| Path | `/api/v2/websets/{websetId}/research/runs/{runId}` |
+| Permission | `websets.research:read` |
+| Returns | Research run progress or current results |
+
+## Path parameters
+
+<ParamField path="websetId" type="string" required>
+  Table UUID.
+</ParamField>
+
+<ParamField path="runId" type="string" required>
+  Research run UUID.
+</ParamField>
+
+## Query parameters
+
+<ParamField query="view" type="string">
+  `progress` or `results`.
+</ParamField>
+
+<ParamField query="page" type="integer">
+  Page number for paginated results.
+</ParamField>
+
+<ParamField query="limit" type="integer">
+  Maximum 100.
+</ParamField>
+
+## Behavior
+
+- Results are current effective values, including manual edits, not historical raw provider responses
+- Research does not automatically start outreach
+
+```bash cURL
+curl -X GET "https://revor.ai/api/v2/websets/{websetId}/research/runs/{runId}?view=progress" \
+  -H "Authorization: Bearer sk-revor-REPLACE_ME"
+```

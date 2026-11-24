@@ -1,0 +1,131 @@
+---
+title: "查询异步任务"
+description: "查询外联、信息检索、海关数据或潜客名单启动任务。任务只能由所属用户读取，并且 API Key 仍需具有对应功能的读取权限。"
+keywords: ["Revor AI", "API v2", "查询异步任务"]
+api: "GET https://revor.ai/api/v2/jobs/{id}"
+authMethod: "bearer"
+playground: "simple"
+---
+
+| 属性 | 值 |
+| --- | --- |
+| 方法 | `GET` |
+| 路径 | `/api/v2/jobs/{id}` |
+| 权限 | 任务原始能力的读取权限 |
+| 限流 | 状态轮询档位 |
+| 幂等 | 不适用 |
+| 返回 | 任务对象 |
+
+## 取消排队任务
+
+该接口只保证取消 `queued` 或 `scheduled` 任务，并要求 API Key 具有该任务原始 action 的写权限。任务进入 `running` 后可能已经调用外部服务或产生副作用，因此返回 HTTP `409 job_already_running`，不会伪报取消成功。已经处于终态的任务会原样返回，便于安全重试。
+
+| 属性 | 值 |
+| --- | --- |
+| 方法 | `POST` |
+| 路径 | `/api/v2/jobs/{id}/cancel` |
+| 权限 | 任务原始 action 的写权限 |
+| 限流 | 普通读取档位（轻量控制操作） |
+| 幂等 | 不适用 |
+| 返回 | 任务对象（终态时原样返回） |
+
+<RequestExample>
+
+```bash cURL - 取消任务
+curl -X POST "https://revor.ai/api/v2/jobs/JOB_ID/cancel" \
+  -H "Authorization: Bearer sk-revor-REPLACE_ME"
+```
+
+```bash cURL - 查询任务
+curl "https://revor.ai/api/v2/jobs/JOB_ID" \
+  -H "Authorization: Bearer sk-revor-REPLACE_ME"
+```
+
+</RequestExample>
+
+## 任务状态
+
+| 状态 | 是否终态 | 说明 |
+| --- | --- | --- |
+| `queued` | 否 | 已接受，等待处理。 |
+| `scheduled` | 否 | 已安排稍后处理。 |
+| `running` | 否 | 正在执行。 |
+| `settling` | 否 | 正在确认并保存结果。 |
+| `succeeded` | 是 | 执行成功，可读取 `result`。 |
+| `failed` | 是 | 执行失败，可读取 `error`。 |
+| `cancelled` | 是 | 任务已取消。 |
+
+<ResponseExample>
+
+```json 200
+{
+  "ok": true,
+  "request_id": "req_xxx",
+  "item": {
+    "id": "job-uuid",
+    "action": "research.public_web",
+    "status": "succeeded",
+    "progress": {
+      "stage": "completed",
+      "percent": 100
+    },
+    "resource": {
+      "type": "company_research_job",
+      "id": "job-uuid"
+    },
+    "scheduled_at": "2026-08-25T08:00:00.000Z",
+    "started_at": "2026-08-25T08:00:01.000Z",
+    "finished_at": "2026-08-25T08:00:05.000Z",
+    "attempt_count": 1,
+    "result": {},
+    "error": null,
+    "billing": {
+      "status": "settled",
+      "charged_credits": 5,
+      "pending_units": 0
+    }
+  }
+}
+```
+
+</ResponseExample>
+
+触达任务还会返回 `channel`，值为 `email`、`linkedin` 或 `whatsapp`。触达任务不按该接口额外扣费，`billing.status` 通常为 `not_metered`。
+
+常见计费状态包括：计费任务尚未结算时的 `pending`、最终用量已结算时的 `settled`、免费动作的 `not_billable`，以及不经过该任务计费流程的 `not_metered`。实际扣费应以终态任务中的 `charged_credits` 为准。
+
+## 轮询建议
+
+<Steps>
+  <Step title="轮询间隔">
+    建议间隔 2 至 5 秒，并对网络错误使用指数退避。
+  </Step>
+  <Step title="任务不存在">
+    `404 task_not_found` 不是"尚未创建完成"，不要无限重试错误的任务 ID。
+  </Step>
+  <Step title="确认终态">
+    只有 `succeeded`、`failed`、`cancelled` 是终态。
+  </Step>
+  <Step title="结果与错误">
+    `succeeded` 时 `result` 为对象，`error` 为 `null`；`failed` 时 `result` 为 `null`，`error.code` 是稳定错误标识。
+  </Step>
+</Steps>
+
+## 潜客名单启动任务说明
+
+`POST /api/v2/prospect-lists` 返回的 `preparation_job.id` 只用于确认潜客名单是否成功启动。该任务为 `succeeded` 时，潜在客户发现可能仍在进行。
+
+```text
+preparation_job：queued - running - succeeded
+潜客名单：generating_criteria - searching - verifying - completed
+```
+
+<Warning>
+  Job 状态描述一次异步操作，名单状态描述整个发现流程；两者不能互相替代。
+</Warning>
+
+要判断名单是否真正完成，必须查询：
+
+```http GET /api/v2/prospect-lists/{webset_id}
+GET /api/v2/prospect-lists/{webset_id}
+```

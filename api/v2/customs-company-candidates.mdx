@@ -1,0 +1,124 @@
+---
+title: "Find customs company candidates"
+description: "Find exact name strings that have trade records in a date range."
+api: "POST https://revor.ai/api/v2/customs/company-candidates"
+authMethod: "bearer"
+playground: "simple"
+keywords:
+  - "Revor AI"
+  - "API v2"
+  - "Find customs company candidates"
+---
+
+Find exact name strings that have trade records in a date range. This is not a legal-entity resolution service.
+
+## At a glance
+
+|  |  |
+| --- | --- |
+| Method | `POST` |
+| Path | `/api/v2/customs/company-candidates` |
+| Returns | Company-name candidates with trade counts and queryability flags |
+| Idempotency | Supported |
+
+`company_role` and `catalog` are optional but should be provided together. If both are omitted, the endpoint checks the common `importer/imports` and `exporter/exports` combinations. If only one is supplied, the other is filled from its common pairing.
+
+## Request
+
+### Parameters
+
+<ParamField body="company_name" type="string" required>
+  Company name to find in the customs dataset.
+</ParamField>
+
+<ParamField body="company_role" type="string">
+  `importer` or `exporter`.
+</ParamField>
+
+<ParamField body="catalog" type="string">
+  `imports` or `exports`.
+</ParamField>
+
+<ParamField body="compare_catalogs" type="boolean">
+  With `company_role`, set `true` to check both catalogs. Set `false` when an explicitly supplied `catalog` must be used alone.
+</ParamField>
+
+<ParamField body="start_date" type="date" required>
+  `YYYY-MM-DD`.
+</ParamField>
+
+<ParamField body="end_date" type="date" required>
+  `YYYY-MM-DD`; maximum range is one year.
+</ParamField>
+
+<ParamField body="page" default="1" type="integer">
+  Default 1.
+</ParamField>
+
+<ParamField body="page_size" default="20" type="integer">
+  1-20; default 20.
+</ParamField>
+
+<ParamField body="country_codes" type="string">
+  One or more comma-separated ISO 3166-1 alpha-3 country or region codes, such as `USA,IDN`.
+</ParamField>
+
+### Example request
+
+```bash cURL
+curl -X POST "https://revor.ai/api/v2/customs/company-candidates" \
+  -H "Authorization: Bearer sk-revor-REPLACE_ME" \
+  -H "Content-Type: application/json" \
+  -H "Prefer: wait=20" \
+  -d '{
+    "company_name": "Banbros Commercial Inc.",
+    "start_date": "2025-08-01",
+    "end_date": "2026-07-31",
+    "page": 1,
+    "page_size": 20,
+    "company_role": "exporter",
+    "catalog": "imports",
+    "compare_catalogs": false,
+    "country_codes": "IDN"
+  }'
+```
+
+## Response
+
+```json 200
+{
+  "query": "Banbros Commercial Inc.",
+  "date_range": {
+    "start": "2025-08-01",
+    "end": "2026-07-31"
+  },
+  "routing_evidence": {
+    "mode": "explicit",
+    "company_role": "exporter",
+    "catalogs_checked": ["imports"]
+  },
+  "identity_notice": "Trade counts prove exact-name queryability only, not authoritative legal identity.",
+  "candidates": [
+    {
+      "name": "BANBROS COMMERCIAL INC",
+      "source": "company_list",
+      "countries": ["Indonesia"],
+      "company_ids": ["provider-company-id"],
+      "trade_counts": {
+        "start_date": "2025-08-01",
+        "end_date": "2026-07-31",
+        "company_role": "exporter",
+        "catalog": "imports",
+        "imports_as_exporter": 18,
+        "total": 18,
+        "queryable": true
+      },
+      "identity_status": "unverified"
+    }
+  ]
+}
+```
+
+<Info>
+  This endpoint is currently not billable. Its job reports `billing.status: not_billable` and `charged_credits: 0`.
+</Info>

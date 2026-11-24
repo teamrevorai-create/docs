@@ -1,0 +1,83 @@
+---
+title: "解绑渠道账号"
+description: "解除指定智能体的渠道账号绑定。"
+api: "DELETE https://revor.ai/api/v2/agents/{agentId}/channel-bindings/{channel}"
+authMethod: "bearer"
+playground: "simple"
+keywords:
+  - "Revor AI"
+  - "API v2"
+  - "解绑渠道账号"
+---
+
+解除指定智能体的渠道账号绑定。每次只修改指定渠道，保留其他渠道。
+
+## 接口概览
+
+|  |  |
+| --- | --- |
+| 方法 | `DELETE` |
+| 路径 | `/api/v2/agents/{agentId}/channel-bindings/{channel}` |
+| 权限 | `agents.bindings:write` |
+| 限流桶 | `outreach_write` |
+| 返回 | 确认解绑结果 |
+
+## 路径参数
+
+<ParamField path="agentId" type="string" required>
+  智能体 UUID。
+</ParamField>
+
+<ParamField path="channel" type="string" required>
+  仅允许 `linkedin`、`whatsapp`、`email`。
+</ParamField>
+
+## 请求体
+
+<ParamField body="expected_updated_at" type="string" required>
+  最近一次基础配置 GET 返回的 `updated_at`，从 `GET /api/v2/agents/{agentId}` 原样取得。
+</ParamField>
+
+```bash cURL
+curl -X DELETE "https://revor.ai/api/v2/agents/{agentId}/channel-bindings/email" \
+  -H "Authorization: Bearer sk-revor-REPLACE_ME" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "expected_updated_at": "2026-11-13T04:44:50.096+00:00"
+  }'
+```
+
+```json 请求体
+{
+  "expected_updated_at": "从 GET 原样取得"
+}
+```
+
+## 响应
+
+```json 200
+{
+  "ok": true,
+  "request_id": "req_xxx",
+  "item": {
+    "channel": "email",
+    "account_id": null,
+    "bound_at": null
+  }
+}
+```
+
+## 行为说明
+
+- 每次只修改指定渠道，保留其他渠道。
+- 普通 PATCH 不接受绑定字段。
+- 账号归属、渠道匹配、客服智能体占用与启用状态限制复用原服务。
+
+## 错误码
+
+| HTTP | 错误码 | 含义 |
+| --- | --- | --- |
+| `400` | `agent_input_invalid` | 参数错误 |
+| `403` | `permission_denied` | 缺少 `agents.bindings:write` |
+| `404` | `agent_not_found` | 智能体不存在 |
+| `409` | `agent_config_conflict` | 版本过期或并发修改 |

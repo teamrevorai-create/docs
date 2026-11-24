@@ -1,0 +1,95 @@
+---
+title: "扩展更多潜客"
+description: "原入口 POST /api/v2/websets/{webset_id}/find-more 继续支持，参数、返回字段和权限均保持一致。两个 URL 执行同一操作。"
+keywords: ["Revor AI", "API v2", "扩展更多潜客"]
+api: "POST https://revor.ai/api/v2/prospect-lists/{webset_id}/expand"
+authMethod: "bearer"
+playground: "simple"
+---
+
+在已有 Webset 上启动一轮新的挖掘。`count` 表示希望新增的数量，不是新的总数。
+
+## 接口概览
+
+|  |  |
+| --- | --- |
+| 方法 | `POST` |
+| 路径 | `/api/v2/prospect-lists/{webset_id}/expand` |
+| 权限 | `websets:write` |
+| 幂等性 | `Idempotency-Key` 必填 |
+| 计费 | 会消耗积分 |
+| 返回 | `202`，含 job 对象 |
+
+原入口 `POST /api/v2/websets/{webset_id}/find-more` 继续支持，参数、返回字段和权限均保持一致。两个 URL 执行同一操作。异步执行。
+
+## 调用前
+
+先读完当前 [Items 快照](/cn/api/v2/websets-items)，保存第一页的 `stream_cursor` 与 `items_revision`。启动成功后，这对旧 checkpoint 用于订阅本次 Find More 的全部变化。
+
+## 请求
+
+`Idempotency-Key` 必填；网络重试复用同一个值。
+
+<ParamField body="count" type="number" required>
+  可为 `25`、`100`、`500` 或 `1000`，并受会员档位限制。
+</ParamField>
+
+```bash cURL
+curl -X POST "https://revor.ai/api/v2/prospect-lists/WEBSET_ID/expand" \
+  -H "Authorization: Bearer sk-revor-REPLACE_ME" \
+  -H "Idempotency-Key: find-more-001" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "count": 25
+  }'
+```
+
+```json 请求体
+{
+  "count": 25
+}
+```
+
+## 响应
+
+HTTP `202` 已接受：
+
+```json 202
+{
+  "ok": true,
+  "request_id": "req_xxx",
+  "item": {
+    "id": "job-uuid",
+    "action": "websets.find_more",
+    "status": "queued",
+    "progress": {
+      "stage": "queued",
+      "percent": 0
+    },
+    "resource": {
+      "type": "webset",
+      "id": "webset-uuid"
+    },
+    "scheduled_at": "2026-09-24T08:10:00.000Z",
+    "started_at": null,
+    "finished_at": null,
+    "attempt_count": 0,
+    "result": null,
+    "error": null,
+    "billing": {
+      "status": "pending",
+      "charged_credits": 0,
+      "pending_units": 0
+    }
+  }
+}
+```
+
+## 错误码
+
+| HTTP | Code | 说明 |
+| --- | --- | --- |
+| `400` | `idempotency_key_required` | 缺少 `Idempotency-Key` 头。 |
+| `409` | `idempotency_conflict` | 同一个幂等键用于不同请求。 |
+
+保存 `item.id` 作为 `job_id`，随后连接 [Find More SSE](/cn/api/v2/websets-find-more-stream)。

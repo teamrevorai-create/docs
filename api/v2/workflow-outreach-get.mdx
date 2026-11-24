@@ -1,0 +1,37 @@
+---
+title: "Get outreach plan"
+description: "Read the ownership version and schedules for a table's smart outreach plan."
+api: "GET https://revor.ai/api/v2/websets/{websetId}/smart-outreach"
+authMethod: "bearer"
+playground: "simple"
+keywords:
+  - "Revor AI"
+  - "API v2"
+  - "Get outreach plan"
+---
+
+Read the current outreach plan for a table. Get `owner_agent_id` and `ownership_version` before starting outreach.
+
+## Overview
+
+| | |
+| --- | --- |
+| Method | `GET` |
+| Path | `/api/v2/websets/{websetId}/smart-outreach` |
+| Permission | `outreach.plans:read` |
+| Returns | Outreach plan with ownership and schedules |
+
+## Path parameters
+
+<ParamField path="websetId" type="string" required>
+  Table UUID.
+</ParamField>
+
+## Behavior
+
+Call this endpoint before starting outreach to obtain the actual `owner_agent_id` and `ownership_version`. Pass these values in the `POST /smart-outreach/start` request to prevent concurrent modification conflicts.
+
+```bash cURL
+curl -X GET "https://revor.ai/api/v2/websets/{websetId}/smart-outreach" \
+  -H "Authorization: Bearer sk-revor-REPLACE_ME"
+```

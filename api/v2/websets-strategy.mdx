@@ -1,0 +1,196 @@
+---
+title: "Get discovery criteria and strategy"
+description: "The existing GET /api/v2/websets/{webset_id}/strategy endpoint remains supported with the same parameters, response fields, and permissions. Both URLs execute the same operation."
+keywords: ["Revor AI", "API v2", "Get discovery criteria and strategy"]
+api: "GET https://revor.ai/api/v2/prospect-lists/{webset_id}/search-plan"
+authMethod: "bearer"
+playground: "simple"
+---
+
+Returns the currently persisted criteria and search strategy. It does not start a model call or search and does not consume credits.
+
+## At a glance
+
+|  |  |
+| --- | --- |
+| Method | `GET` |
+| Path | `/api/v2/prospect-lists/{webset_id}/search-plan` |
+| Permission | `websets:read` |
+| Returns | `200` with `criteria` and `strategy` |
+
+The existing `GET /api/v2/websets/{webset_id}/strategy` endpoint remains supported with the same parameters, response fields, and permissions. Both URLs execute the same operation. The Webset does not need to be complete.
+
+## Request
+
+```bash cURL
+curl "https://revor.ai/api/v2/prospect-lists/WEBSET_ID/search-plan" \
+  -H "Authorization: Bearer sk-revor-REPLACE_ME"
+```
+
+## Response
+
+```json 200
+{
+  "ok": true,
+  "request_id": "req_xxx",
+  "webset_id": "webset-uuid",
+  "webset_status": "searching",
+  "readiness": "ready",
+  "criteria_ready": true,
+  "strategy_ready": true,
+  "criteria": [
+    {
+      "id": "criterion-1",
+      "description": "Manufactures, sells, rents, or repairs excavators",
+      "type": "business_fit",
+      "weight": 0.65,
+      "required": true,
+      "active": true
+    }
+  ],
+  "strategy": {
+    "query_groups": [
+      {
+        "angle": "North American excavator dealers and rentals",
+        "rationale": "Cover regional dealerships and equipment-rental businesses",
+        "queries": [
+          {
+            "text": "excavator dealer rental United States Canada",
+            "user_location": "US"
+          }
+        ]
+      }
+    ],
+    "additional_queries": [],
+    "rounds": []
+  },
+  "criteria_updated_at": "2026-09-24T07:58:08.000Z",
+  "strategy_available_at": "2026-09-24T07:58:12.000Z",
+  "strategy_updated_at": "2026-09-24T07:58:12.000Z"
+}
+```
+
+## Response fields
+
+<ResponseField name="ok" type="boolean">
+  Whether the request succeeded.
+</ResponseField>
+
+<ResponseField name="request_id" type="string">
+  Request identifier.
+</ResponseField>
+
+<ResponseField name="webset_id" type="string">
+  Webset ID.
+</ResponseField>
+
+<ResponseField name="webset_status" type="string">
+  Current webset status.
+</ResponseField>
+
+<ResponseField name="readiness" type="string">
+  Readiness state:
+
+  - `generating_criteria`: criteria are still being generated.
+  - `planning`: criteria are ready and strategy planning continues.
+  - `ready`: the strategy can be displayed.
+  - `failed` / `cancelled`: the operation failed or was cancelled.
+</ResponseField>
+
+<ResponseField name="criteria_ready" type="boolean">
+  Whether criteria are ready to display.
+</ResponseField>
+
+<ResponseField name="strategy_ready" type="boolean">
+  Whether strategy is ready to display.
+</ResponseField>
+
+<ResponseField name="criteria" type="object[]">
+  Criteria list.
+
+  <Expandable title="properties">
+    <ResponseField name="id" type="string">
+      Criterion ID.
+    </ResponseField>
+
+    <ResponseField name="description" type="string">
+      Criterion description.
+    </ResponseField>
+
+    <ResponseField name="type" type="string">
+      Criterion type.
+    </ResponseField>
+
+    <ResponseField name="weight" type="number">
+      Weight.
+    </ResponseField>
+
+    <ResponseField name="required" type="boolean">
+      Whether required.
+    </ResponseField>
+
+    <ResponseField name="active" type="boolean">
+      Whether active.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="strategy" type="object | null">
+  Search strategy; `null` before it is ready.
+
+  <Expandable title="properties">
+    <ResponseField name="query_groups" type="object[]">
+      Query groups.
+
+      <Expandable title="properties">
+        <ResponseField name="angle" type="string">
+          Angle.
+        </ResponseField>
+
+        <ResponseField name="rationale" type="string">
+          Rationale.
+        </ResponseField>
+
+        <ResponseField name="queries" type="object[]">
+          Query list.
+
+          <Expandable title="properties">
+            <ResponseField name="text" type="string">
+              Query text.
+            </ResponseField>
+
+            <ResponseField name="user_location" type="string">
+              User location.
+            </ResponseField>
+          </Expandable>
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+
+    <ResponseField name="additional_queries" type="string[]">
+      Additional queries.
+    </ResponseField>
+
+    <ResponseField name="rounds" type="object[]">
+      Search rounds.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="criteria_updated_at" type="string">
+  Criteria updated time.
+</ResponseField>
+
+<ResponseField name="strategy_available_at" type="string">
+  Strategy available time.
+</ResponseField>
+
+<ResponseField name="strategy_updated_at" type="string">
+  Strategy updated time.
+</ResponseField>
+
+## Readiness
+
+<Note>
+  Display `criteria` after `criteria_ready=true` and `strategy` after `strategy_ready=true`. Before that, `strategy=null`. The SSE `webset.strategy` event sends the same complete presentation snapshot.
+</Note>

@@ -1,0 +1,119 @@
+---
+title: "启动智能调研"
+description: "在已有表格上启动整表或选中行的智能调研任务。"
+api: "POST https://revor.ai/api/v2/websets/{websetId}/research/runs"
+authMethod: "bearer"
+playground: "simple"
+keywords:
+  - "Revor AI"
+  - "API v2"
+  - "启动智能调研"
+---
+
+在指定表格上启动智能调研，支持全表调研或选中行调研。调研类型包括关键联系人、官网联系方式和自定义问题。
+
+## 接口概览
+
+|  |  |
+| --- | --- |
+| 方法 | `POST` |
+| 路径 | `/api/v2/websets/{websetId}/research/runs` |
+| 权限 | `websets.research:write` |
+| 幂等性 | 通过 `Idempotency-Key` 请求头实现 |
+| 返回 | HTTP 202，含 run ID、kind、field_key 和 reused |
+
+## 路径参数
+
+<ParamField path="websetId" type="string" required>
+  表格 UUID。
+</ParamField>
+
+## 请求体
+
+```json 启动调研
+{
+  "kind": "key_contacts",
+  "scope": {
+    "mode": "all"
+  },
+  "positions": ["CEO", "Procurement"],
+  "max_contacts_per_company": 50
+}
+```
+
+<ParamField body="scope" type="object" required>
+  必须明确指定：
+
+  - `{"mode":"all"}` - 全表调研
+  - `{"mode":"selected","item_ids":["行UUID"]}` - 最多选中 1000 行
+</ParamField>
+
+<ParamField body="kind" type="string" required>
+  `key_contacts`、`website_contacts` 或 `custom`。
+</ParamField>
+
+<ParamField body="label" type="string">
+  可选，调研列的显示标签。
+</ParamField>
+
+<ParamField body="force" default="false" type="boolean">
+  `true` 时按原服务刷新，可能重新计费。
+</ParamField>
+
+## 调研类型
+
+<AccordionGroup>
+  <Accordion title="key_contacts">
+    按职位查找关键联系人。
+
+    - `positions` - 必填，1-24 个职位，每个不超过 60 字符
+    - `max_contacts_per_company` - 1-50，默认 50
+    - 结果列 key：`snovio_key_contacts`
+  </Accordion>
+
+  <Accordion title="website_contacts">
+    从企业官网提取联系方式。
+
+    - `channels` 必填 - 可选 `email`、`whatsapp`、`phone`
+    - 结果列 key：`company_social_contacts`
+  </Accordion>
+
+  <Accordion title="custom">
+    自定义调研问题。
+
+    - `field_key` - 新建或复用的列 key
+    - `question` - 调研问题
+    - `field_type` - `text`、`number`、`boolean`、`list`
+    - `subject_mode` - `company` 或 `person`
+    - `allowed_options` - 可选，用于 `list` 类型
+    - `locale` - 可选
+
+    员工数等问题通过 custom 提交，不提供专用员工数入口。
+  </Accordion>
+</AccordionGroup>
+
+## 请求示例
+
+```bash cURL
+curl -X POST "https://revor.ai/api/v2/websets/webset-uuid/research/runs" \
+  -H "Authorization: Bearer sk-revor-REPLACE_ME" \
+  -H "Idempotency-Key: research-001" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "kind": "key_contacts",
+    "scope": {
+      "mode": "all"
+    },
+    "positions": ["CEO", "Procurement"],
+    "max_contacts_per_company": 50
+  }'
+```
+
+## 行为说明
+
+- 指定的行只要有一行不存在、跨表或不在有效范围内，就整次拒绝，不静默扩大范围
+- 沿用原有预扣、缓存和结算
+- 返回 202、kind、field_key、reused 和 run
+- 轮询支持 page（默认 1）、limit（默认 50，最大 100）、view=progress/results（默认 progress）
+- results 返回该 run 所涉及行的**当前有效结果**，包含后续人工修改，不表示历史 provider 原始快照
+- 调研不自动启动触达

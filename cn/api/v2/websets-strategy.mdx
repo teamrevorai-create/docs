@@ -1,0 +1,196 @@
+---
+title: "查询挖掘条件与搜索策略"
+description: "原入口 GET /api/v2/websets/{webset_id}/strategy 继续支持，参数、返回字段和权限均保持一致。两个 URL 执行同一操作。"
+keywords: ["Revor AI", "API v2", "查询挖掘条件与搜索策略"]
+api: "GET https://revor.ai/api/v2/prospect-lists/{webset_id}/search-plan"
+authMethod: "bearer"
+playground: "simple"
+---
+
+返回当前已持久化的条件与搜索策略，不触发新的模型调用、搜索或积分消耗。
+
+## 接口概览
+
+|  |  |
+| --- | --- |
+| 方法 | `GET` |
+| 路径 | `/api/v2/prospect-lists/{webset_id}/search-plan` |
+| 权限 | `websets:read` |
+| 返回 | `200`，含 `criteria` 与 `strategy` |
+
+原入口 `GET /api/v2/websets/{webset_id}/strategy` 继续支持，参数、返回字段和权限均保持一致。两个 URL 执行同一操作。名单无需等待完成。
+
+## 请求
+
+```bash cURL
+curl "https://revor.ai/api/v2/prospect-lists/WEBSET_ID/search-plan" \
+  -H "Authorization: Bearer sk-revor-REPLACE_ME"
+```
+
+## 响应
+
+```json 200
+{
+  "ok": true,
+  "request_id": "req_xxx",
+  "webset_id": "webset-uuid",
+  "webset_status": "searching",
+  "readiness": "ready",
+  "criteria_ready": true,
+  "strategy_ready": true,
+  "criteria": [
+    {
+      "id": "criterion-1",
+      "description": "实际制造、销售、出租或维修挖掘机",
+      "type": "business_fit",
+      "weight": 0.65,
+      "required": true,
+      "active": true
+    }
+  ],
+  "strategy": {
+    "query_groups": [
+      {
+        "angle": "北美挖掘机经销与租赁",
+        "rationale": "覆盖区域经销商和设备租赁商",
+        "queries": [
+          {
+            "text": "excavator dealer rental United States Canada",
+            "user_location": "US"
+          }
+        ]
+      }
+    ],
+    "additional_queries": [],
+    "rounds": []
+  },
+  "criteria_updated_at": "2026-09-24T07:58:08.000Z",
+  "strategy_available_at": "2026-09-24T07:58:12.000Z",
+  "strategy_updated_at": "2026-09-24T07:58:12.000Z"
+}
+```
+
+## 响应字段
+
+<ResponseField name="ok" type="boolean">
+  请求是否成功。
+</ResponseField>
+
+<ResponseField name="request_id" type="string">
+  请求标识。
+</ResponseField>
+
+<ResponseField name="webset_id" type="string">
+  名单 ID。
+</ResponseField>
+
+<ResponseField name="webset_status" type="string">
+  名单当前状态。
+</ResponseField>
+
+<ResponseField name="readiness" type="string">
+  就绪状态：
+
+  - `generating_criteria`：条件仍在生成。
+  - `planning`：条件已生成，策略仍在规划。
+  - `ready`：策略可展示。
+  - `failed` / `cancelled`：任务已失败或取消。
+</ResponseField>
+
+<ResponseField name="criteria_ready" type="boolean">
+  条件是否已准备好展示。
+</ResponseField>
+
+<ResponseField name="strategy_ready" type="boolean">
+  策略是否已准备好展示。
+</ResponseField>
+
+<ResponseField name="criteria" type="object[]">
+  条件列表。
+
+  <Expandable title="properties">
+    <ResponseField name="id" type="string">
+      条件 ID。
+    </ResponseField>
+
+    <ResponseField name="description" type="string">
+      条件描述。
+    </ResponseField>
+
+    <ResponseField name="type" type="string">
+      条件类型。
+    </ResponseField>
+
+    <ResponseField name="weight" type="number">
+      权重。
+    </ResponseField>
+
+    <ResponseField name="required" type="boolean">
+      是否必需。
+    </ResponseField>
+
+    <ResponseField name="active" type="boolean">
+      是否激活。
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="strategy" type="object | null">
+  搜索策略；未准备好时为 `null`。
+
+  <Expandable title="properties">
+    <ResponseField name="query_groups" type="object[]">
+      查询分组。
+
+      <Expandable title="properties">
+        <ResponseField name="angle" type="string">
+          角度。
+        </ResponseField>
+
+        <ResponseField name="rationale" type="string">
+          理由。
+        </ResponseField>
+
+        <ResponseField name="queries" type="object[]">
+          查询列表。
+
+          <Expandable title="properties">
+            <ResponseField name="text" type="string">
+              查询文本。
+            </ResponseField>
+
+            <ResponseField name="user_location" type="string">
+              用户位置。
+            </ResponseField>
+          </Expandable>
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+
+    <ResponseField name="additional_queries" type="string[]">
+      额外查询。
+    </ResponseField>
+
+    <ResponseField name="rounds" type="object[]">
+      搜索轮次。
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="criteria_updated_at" type="string">
+  条件更新时间。
+</ResponseField>
+
+<ResponseField name="strategy_available_at" type="string">
+  策略可用时间。
+</ResponseField>
+
+<ResponseField name="strategy_updated_at" type="string">
+  策略更新时间。
+</ResponseField>
+
+## Readiness
+
+<Note>
+  `criteria_ready=true` 后可以展示 `criteria`；`strategy_ready=true` 后可以展示 `strategy`。未准备好时 `strategy=null`。同样的完整快照也会通过 SSE 的 `webset.strategy` 事件发送。
+</Note>

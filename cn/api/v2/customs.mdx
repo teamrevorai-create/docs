@@ -1,0 +1,250 @@
+---
+title: "海关贸易数据 API"
+sidebarTitle: "概览"
+description: "海关 API 提供企业发现、企业名称候选、交易对手、商品类别、趋势、国家分布和完整贸易报告。"
+keywords:
+  - "Revor AI"
+  - "API v2"
+  - "海关贸易数据 API"
+---
+
+海关 API 提供企业发现、企业名称候选、交易对手、商品类别、趋势、国家分布和完整贸易报告。所有接口均为异步 `POST`。`Idempotency-Key` 可选；需要安全重试时建议发送并复用同一个值。
+
+查询时需要区分两个维度：
+
+- `company_role` 表示目标企业在交易中的角色：`importer`（进口商）或 `exporter`（出口商）。
+- `catalog` 表示查询的数据目录：`imports`（进口记录）或 `exports`（出口记录）。
+
+两者可以独立组合。大多数查询使用前两种常用组合；只有需要从交易另一侧的数据目录反查时，才使用交叉组合。
+
+| 查询场景 | `company_role` | `catalog` |
+| --- | --- | --- |
+| 查询某进口商的进口记录 | `importer` | `imports` |
+| 查询某出口商的出口记录 | `exporter` | `exports` |
+| 从目的国进口记录中查询某出口商及其买家 | `exporter` | `imports` |
+| 从来源国出口记录中查询某进口商及其供应商 | `importer` | `exports` |
+
+`company_role` 回答"目标企业在交易中是什么角色"，`catalog` 回答"从哪一侧的记录目录查询"，因此两者不是重复字段。
+
+## 接口
+
+| 方法 | 路径 | 说明 |
+| --- | --- | --- |
+| `POST` | `/api/v2/customs/company-candidates` | 查找含有贸易记录的精确名称字符串。 |
+| `POST` | `/api/v2/customs/companies/search` | 根据商品、国家和时间条件发现企业。 |
+
+<CardGroup cols={2}>
+  <Card title="查找可用的海关企业名称" icon="magnifying-glass" href="/cn/api/v2/customs-company-candidates">
+    在指定日期范围内查找含有贸易记录的精确名称字符串。
+  </Card>
+
+  <Card title="按商品和国家发现企业" icon="ship" href="/cn/api/v2/customs-companies-search">
+    根据贸易记录中的商品、国家和时间条件返回进口商或出口商列表。
+  </Card>
+</CardGroup>
+
+## 查询接口
+
+| 路径 | 结果说明 |
+| --- | --- |
+| `/api/v2/customs/counterparties` | 主要交易对手。 |
+| `/api/v2/customs/categories` | 主要 HS 商品类别。 |
+| `/api/v2/customs/trends` | 按月、季度或年份聚合趋势。 |
+| `/api/v2/customs/countries` | 来源国或目的国分布。 |
+| `/api/v2/customs/trade-reports` | 一次执行以上四个 section，允许部分 section 失败。 |
+
+这些接口共享同一请求结构：
+
+```bash cURL
+curl -X POST "https://revor.ai/api/v2/customs/trade-reports" \
+  -H "Authorization: Bearer sk-revor-REPLACE_ME" \
+  -H "Content-Type: application/json" \
+  -H "Prefer: wait=20" \
+  -d '{
+    "company_name": "BANBROS COMMERCIAL INC",
+    "company_role": "importer",
+    "catalog": "imports",
+    "start_date": "2025-08-01",
+    "end_date": "2026-07-31",
+    "page": 1,
+    "page_size": 20,
+    "period_unit": "months",
+    "filters": {
+      "hs_code": "8429",
+      "product_description": "excavator",
+      "origin_country_code": "CHN",
+      "destination_country_code": "USA"
+    }
+  }'
+```
+
+## 共享请求字段
+
+<ParamField body="company_name" type="string" required>
+  2-300 字符，建议使用候选接口确认后的精确名称。
+</ParamField>
+
+<ParamField body="company_role" type="string" required>
+  `importer` 或 `exporter`。
+</ParamField>
+
+<ParamField body="catalog" type="string">
+  `imports` 或 `exports`；表示数据目录，与 company_role 可独立选择。省略时按 company_role 使用常用目录。
+</ParamField>
+
+<ParamField body="start_date" type="date" required>
+  `YYYY-MM-DD`。
+</ParamField>
+
+<ParamField body="end_date" type="date" required>
+  `YYYY-MM-DD`，不得早于 start_date。
+</ParamField>
+
+<ParamField body="page" default="1" type="integer">
+  1-1000，默认 1。
+</ParamField>
+
+<ParamField body="page_size" default="20" type="integer">
+  1-20，默认 20。超出范围会归一到边界值。
+</ParamField>
+
+<ParamField body="period_unit" default="months" type="string">
+  `months`、`quarters`、`years`，默认 `months`。
+</ParamField>
+
+<ParamField body="filters.hs_code" type="string">
+  单个 2、4、6、8 或 10 位 HS Code；不支持多值列表或范围。
+</ParamField>
+
+<ParamField body="filters.product_description" type="string">
+  商品描述过滤。
+</ParamField>
+
+<ParamField body="filters.origin_country_code" type="string">
+  来源国 ISO 3166-1 alpha-3 代码，例如 `CHN`。
+</ParamField>
+
+<ParamField body="filters.destination_country_code" type="string">
+  目的国 ISO 3166-1 alpha-3 代码，例如 `USA`。
+</ParamField>
+
+<Note>
+  查询日期跨度最多一年。国家/地区代码统一使用三位代码；常见示例包括 `USA`、`CHN`、`IDN`、`PHL`、`GBR`。日期格式、企业名称、company_role、catalog 或国家码不合法时，请求直接失败，不会创建任务。
+</Note>
+
+## 单 section 结果
+
+任务成功后，`item.result` 包含查询口径和 `data` 分页对象：
+
+```json 响应体
+{
+  "company_name": "BANBROS COMMERCIAL INC",
+  "company_role": "importer",
+  "catalog": "imports",
+  "date_range": {
+    "start": "2025-08-01",
+    "end": "2026-07-31"
+  },
+  "section": "counterparties",
+  "data": {
+    "total": 42,
+    "page": 1,
+    "page_size": 20,
+    "returned_rows": 20,
+    "items": [
+      {
+        "name": "Example Trading Co.",
+        "country": "United States",
+        "countryCode": "US",
+        "tradeCount": 18,
+        "sumOfUSD": 250000,
+        "amountSharePct": 21.4
+      }
+    ]
+  }
+}
+```
+
+公开行只可能包含稳定字段：
+
+- `name`
+- `country`
+- `countryCode`
+- `date`
+- `hsCode`
+- `hsDescriptionCn`
+- `hsDescriptionEn`
+- `companyCount`
+- `weight`
+- `quantity`
+- `sumOfUSD`
+- `weightAvgPrice`
+- `quantityAvgPrice`
+- `tradeCount`
+- `amountSharePct`
+
+不同 section 不一定返回全部字段。
+
+## 完整报告结果
+
+`trade-reports` 的 `item.result` 按 section 返回：
+
+```json 响应体
+{
+  "company_name": "BANBROS COMMERCIAL INC",
+  "company_role": "importer",
+  "catalog": "imports",
+  "date_range": {
+    "start": "2025-08-01",
+    "end": "2026-07-31"
+  },
+  "status": "partial",
+  "sections": {
+    "counterparties": {
+      "status": "complete",
+      "data": {
+        "total": 42,
+        "page": 1,
+        "page_size": 20,
+        "returned_rows": 20,
+        "items": []
+      }
+    },
+    "categories": {
+      "status": "complete",
+      "data": {}
+    },
+    "trend": {
+      "status": "failed",
+      "error": {
+        "code": "customs_section_failed"
+      }
+    },
+    "countries": {
+      "status": "complete",
+      "data": {}
+    }
+  }
+}
+```
+
+<Warning>
+  完整报告允许部分成功。应逐个检查 section 的 `status`，不要因为 job 为 `succeeded` 就假设四个 section 全部成功。
+</Warning>
+
+## Credits 计费
+
+当前默认海关计费按实际返回行数计算。
+
+| 结果 section | 每行 Credits |
+| --- | ---: |
+| 企业搜索（`companies/search`） | 3.6 |
+| 交易对手 | 3.6 |
+| 趋势 | 3.6 |
+| 商品类别 | 3.0 |
+| 国家分布 | 3.0 |
+| 企业名称候选 | 免费 |
+
+<Note>
+  执行前，服务可能按请求的 page size 和 sections 预留足额 Credits；最终按实际返回行数结算，将总费用向上取整到整数 Credits，并释放未使用的预留额度。应以完成任务中的 `billing.charged_credits` 为准；价格可能随当前计费配置调整。
+</Note>

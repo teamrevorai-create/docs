@@ -16,27 +16,35 @@
         "tabs": [
           {
             "tab": "Guides",
-            "anchors": [
+            "groups": [
               {
-                "anchor": "Getting started",
+                "group": "Get started",
                 "pages": [
                   "guides",
-                  {
-                    "group": "Quick start",
-                    "pages": [
-                      "build-your-first-prospect-list",
-                      "launch-your-first-outbound-campaign",
-                      "start-handling-customer-inquiries-with-revor",
-                      "use-revor-ai-in-chat-gpt-claude-and-more"
-                    ]
-                  },
-                  "security"
+                  "build-your-first-prospect-list",
+                  "launch-your-first-outbound-campaign",
+                  "start-handling-customer-inquiries-with-revor",
+                  "use-revor-ai-in-chat-gpt-claude-and-more"
                 ]
               },
               {
-                "anchor": "Find prospects",
+                "group": "Build target lists",
                 "pages": [
-                  "how-to-describe-your-ideal-customers"
+                  "how-to-describe-your-ideal-customers",
+                  "how-to-find-people-who-match-your-buyer-persona"
+                ]
+              },
+              {
+                "group": "Research your targets",
+                "pages": [
+                  "how-to-get-contact-details-from-company-websites",
+                  "how-to-research-anything-about-your-target-companies"
+                ]
+              },
+              {
+                "group": "Account and security",
+                "pages": [
+                  "security"
                 ]
               }
             ]
@@ -55,6 +63,129 @@
                   "mcp/skills/company-research",
                   "mcp/skills/contact-search",
                   "mcp/skills/outreach"
+                ]
+              }
+            ]
+          },
+          {
+            "tab": "API",
+            "groups": [
+              {
+                "group": "Getting started",
+                "pages": [
+                  "api/v2/overview",
+                  "api/v2/prospect-workflow",
+                  "api/v2/rate-limits",
+                  "api/v2/credits",
+                  "api/v2/jobs"
+                ]
+              },
+              {
+                "group": "Prospect lists",
+                "pages": [
+                  "api/v2/targets",
+                  "api/v2/websets-create",
+                  "api/v2/websets-list",
+                  "api/v2/websets-detail",
+                  "api/v2/websets-strategy",
+                  "api/v2/websets-items",
+                  "api/v2/websets-items-stream",
+                  "api/v2/websets-find-more",
+                  "api/v2/websets-find-more-stream",
+                  {
+                    "group": "Imports",
+                    "pages": [
+                      "api/v2/workflow-imports-create",
+                      "api/v2/workflow-imports-complete",
+                      "api/v2/workflow-imports-get"
+                    ]
+                  }
+                ]
+              },
+              {
+                "group": "Search and research",
+                "pages": [
+                  {
+                    "group": "Company and people search",
+                    "pages": [
+                      "api/v2/search",
+                      "api/v2/search-companies",
+                      "api/v2/search-people"
+                    ]
+                  },
+                  {
+                    "group": "Public web and contacts",
+                    "pages": [
+                      "api/v2/research",
+                      "api/v2/research-public-web",
+                      "api/v2/research-contacts"
+                    ]
+                  },
+                  {
+                    "group": "Table research",
+                    "pages": [
+                      "api/v2/workflow-research-columns",
+                      "api/v2/workflow-research-start",
+                      "api/v2/workflow-research-get"
+                    ]
+                  },
+                  {
+                    "group": "Table contacts",
+                    "pages": [
+                      "api/v2/workflow-contacts-get",
+                      "api/v2/workflow-contacts-update"
+                    ]
+                  }
+                ]
+              },
+              {
+                "group": "Customs trade data",
+                "pages": [
+                  "api/v2/customs",
+                  "api/v2/customs-company-candidates",
+                  "api/v2/customs-companies-search"
+                ]
+              },
+              {
+                "group": "Agents",
+                "pages": [
+                  "api/v2/agents",
+                  "api/v2/agents-list",
+                  "api/v2/agents-get",
+                  "api/v2/agents-update",
+                  "api/v2/agents-from-website",
+                  "api/v2/agents-preview",
+                  "api/v2/agents-bind-channel",
+                  "api/v2/agents-unbind-channel",
+                  "api/v2/agents-sequence-get",
+                  "api/v2/agents-sequence-update",
+                  "api/v2/agents-sequence-generate",
+                  "api/v2/agents-sequence-preview"
+                ]
+              },
+              {
+                "group": "Outreach",
+                "pages": [
+                  {
+                    "group": "Smart outreach",
+                    "pages": [
+                      "api/v2/workflow-outreach-get",
+                      "api/v2/workflow-outreach-start",
+                      "api/v2/workflow-outreach-stop",
+                      "api/v2/workflow-outreach-statuses",
+                      "api/v2/workflow-outreach-item",
+                      "api/v2/workflow-outreach-draft-get",
+                      "api/v2/workflow-outreach-draft-update"
+                    ]
+                  },
+                  {
+                    "group": "One-off outreach",
+                    "pages": [
+                      "api/v2/connect-accounts",
+                      "api/v2/outreach-dispatches",
+                      "api/v2/linkedin-post-likes"
+                    ]
+                  }
                 ]
               }
             ]
@@ -79,20 +210,35 @@
         "tabs": [
           {
             "tab": "指南",
-            "anchors": [
+            "groups": [
               {
-                "anchor": "开始使用",
+                "group": "开始使用",
                 "pages": [
                   "guides/cn",
-                  {
-                    "group": "快速开始",
-                    "pages": [
-                      "cn/build-your-first-prospect-list",
-                      "cn/launch-your-first-outbound-campaign",
-                      "cn/zhi-neng",
-                      "cn/use-revor-ai-in-chat-gpt-claude-and-more"
-                    ]
-                  },
+                  "cn/build-your-first-prospect-list",
+                  "cn/launch-your-first-outbound-campaign",
+                  "cn/zhi-neng",
+                  "cn/use-revor-ai-in-chat-gpt-claude-and-more"
+                ]
+              },
+              {
+                "group": "构建目标名单",
+                "pages": [
+                  "cn/how-to-describe-your-ideal-customers",
+                  "cn/how-to-find-people-who-match-your-buyer-persona"
+                ]
+              },
+              {
+                "group": "调研目标客户",
+                "pages": [
+                  "cn/how-to-find-decision-makers-at-your-target-companies",
+                  "cn/how-to-get-contact-details-from-company-websites",
+                  "cn/how-to-research-anything-about-your-target-companies"
+                ]
+              },
+              {
+                "group": "账户与安全",
+                "pages": [
                   "cn/security"
                 ]
               }
@@ -112,6 +258,129 @@
                   "mcp/cn/skills/company-research",
                   "mcp/cn/skills/contact-search",
                   "mcp/cn/skills/outreach"
+                ]
+              }
+            ]
+          },
+          {
+            "tab": "API",
+            "groups": [
+              {
+                "group": "开始使用",
+                "pages": [
+                  "cn/api/v2/overview",
+                  "cn/api/v2/prospect-workflow",
+                  "cn/api/v2/rate-limits",
+                  "cn/api/v2/credits",
+                  "cn/api/v2/jobs"
+                ]
+              },
+              {
+                "group": "潜客名单",
+                "pages": [
+                  "cn/api/v2/targets",
+                  "cn/api/v2/websets-create",
+                  "cn/api/v2/websets-list",
+                  "cn/api/v2/websets-detail",
+                  "cn/api/v2/websets-strategy",
+                  "cn/api/v2/websets-items",
+                  "cn/api/v2/websets-items-stream",
+                  "cn/api/v2/websets-find-more",
+                  "cn/api/v2/websets-find-more-stream",
+                  {
+                    "group": "表格导入",
+                    "pages": [
+                      "cn/api/v2/workflow-imports-create",
+                      "cn/api/v2/workflow-imports-complete",
+                      "cn/api/v2/workflow-imports-get"
+                    ]
+                  }
+                ]
+              },
+              {
+                "group": "搜索与研究",
+                "pages": [
+                  {
+                    "group": "公司与人物搜索",
+                    "pages": [
+                      "cn/api/v2/search",
+                      "cn/api/v2/search-companies",
+                      "cn/api/v2/search-people"
+                    ]
+                  },
+                  {
+                    "group": "公开网页与联系人",
+                    "pages": [
+                      "cn/api/v2/research",
+                      "cn/api/v2/research-public-web",
+                      "cn/api/v2/research-contacts"
+                    ]
+                  },
+                  {
+                    "group": "表格智能调研",
+                    "pages": [
+                      "cn/api/v2/workflow-research-columns",
+                      "cn/api/v2/workflow-research-start",
+                      "cn/api/v2/workflow-research-get"
+                    ]
+                  },
+                  {
+                    "group": "表格联系人",
+                    "pages": [
+                      "cn/api/v2/workflow-contacts-get",
+                      "cn/api/v2/workflow-contacts-update"
+                    ]
+                  }
+                ]
+              },
+              {
+                "group": "海关贸易数据",
+                "pages": [
+                  "cn/api/v2/customs",
+                  "cn/api/v2/customs-company-candidates",
+                  "cn/api/v2/customs-companies-search"
+                ]
+              },
+              {
+                "group": "智能体",
+                "pages": [
+                  "cn/api/v2/agents",
+                  "cn/api/v2/agents-list",
+                  "cn/api/v2/agents-get",
+                  "cn/api/v2/agents-update",
+                  "cn/api/v2/agents-from-website",
+                  "cn/api/v2/agents-preview",
+                  "cn/api/v2/agents-bind-channel",
+                  "cn/api/v2/agents-unbind-channel",
+                  "cn/api/v2/agents-sequence-get",
+                  "cn/api/v2/agents-sequence-update",
+                  "cn/api/v2/agents-sequence-generate",
+                  "cn/api/v2/agents-sequence-preview"
+                ]
+              },
+              {
+                "group": "触达",
+                "pages": [
+                  {
+                    "group": "智能触达",
+                    "pages": [
+                      "cn/api/v2/workflow-outreach-get",
+                      "cn/api/v2/workflow-outreach-start",
+                      "cn/api/v2/workflow-outreach-stop",
+                      "cn/api/v2/workflow-outreach-statuses",
+                      "cn/api/v2/workflow-outreach-item",
+                      "cn/api/v2/workflow-outreach-draft-get",
+                      "cn/api/v2/workflow-outreach-draft-update"
+                    ]
+                  },
+                  {
+                    "group": "单次触达",
+                    "pages": [
+                      "cn/api/v2/connect-accounts",
+                      "cn/api/v2/outreach-dispatches",
+                      "cn/api/v2/linkedin-post-likes"
+                    ]
+                  }
                 ]
               }
             ]

@@ -1,0 +1,107 @@
+---
+title: "Generate sequence round content"
+description: "Generate content for a follow-up round without saving or sending."
+api: "POST https://revor.ai/api/v2/agents/{agentId}/sequence/generate"
+authMethod: "bearer"
+playground: "simple"
+keywords:
+  - "Revor AI"
+  - "API v2"
+  - "Generate sequence round content"
+---
+
+Generate content for a follow-up round using the saved first-touch configuration.
+
+## Overview
+
+|  |  |
+| --- | --- |
+| Method | `POST` |
+| Path | `/api/v2/agents/{agentId}/sequence/generate` |
+| Permission | `agents:write` |
+| Idempotency | Required (`Idempotency-Key` header) |
+| Rate limit | `expensive_create` |
+| Returns | Public job (poll `GET /api/v2/jobs/{id}`) |
+
+## Path parameter
+
+<ParamField path="agentId" type="string" required>
+  UUID of the agent with an icebreaker configuration.
+</ParamField>
+
+## Request body
+
+<ParamField body="round_no" type="integer" required>
+  Ranges from `2-11`.
+</ParamField>
+
+<ParamField body="content_generation_mode" type="string">
+  `ai_personalized` or `fixed_template`.
+</ParamField>
+
+<ParamField body="content_input" type="string">
+  Content input for the round.
+</ParamField>
+
+<ParamField body="followup_purpose" type="string">
+  Purpose for the follow-up.
+</ParamField>
+
+<ParamField body="generate_both" type="boolean">
+  `true` returns `ai_content` and `fixed_content`; `false` returns `content_input`.
+</ParamField>
+
+<ParamField body="prior_rounds" type="array">
+  Contains every earlier follow-up, in order, as `content_generation_mode`/`content_input`. Its length must equal `round_no - 2`.
+</ParamField>
+
+```bash cURL
+curl -X POST "https://revor.ai/api/v2/agents/{agentId}/sequence/generate" \
+  -H "Authorization: Bearer sk-revor-REPLACE_ME" \
+  -H "Idempotency-Key: seq-generate-001" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "round_no": 2,
+    "content_generation_mode": "ai_personalized",
+    "content_input": "Emphasize delivery times",
+    "followup_purpose": "Share an example",
+    "generate_both": true,
+    "prior_rounds": []
+  }'
+```
+
+## Response
+
+```json 202
+{
+  "ok": true,
+  "request_id": "req_xxx",
+  "item": {
+    "id": "job-uuid",
+    "status": "queued",
+    "type": "agent_sequence_generate"
+  }
+}
+```
+
+### Behavior
+
+- Uses saved first-touch configuration.
+- Does not save its output or send messages.
+- Does not consume outreach allowance, but is subject to `expensive_create` limits and job concurrency limits.
+- Results also include `agent_id`, `agent_version`, and `round_no`.
+- Unknown model outcomes are not automatically regenerated; use a new idempotency key.
+
+<Note>
+  Sequence configuration is a separate resource, not part of the base PATCH. It requires an icebreaker agent and the same rollout gate as Console. Otherwise it returns `404` `agent_sequence_unavailable`.
+</Note>
+
+## Errors
+
+| HTTP | Code | Meaning |
+| --- | --- | --- |
+| `400` | `agent_input_invalid` | Request does not match the contract |
+| `403` | `permission_denied` | Missing required permission |
+| `404` | `agent_not_found` | Agent does not exist, was deleted, or belongs to another user |
+| `404` | `agent_sequence_unavailable` | Feature not enabled for this agent |
+| `500` | `agent_operation_failed` | Operation failed. Read current state before retrying |

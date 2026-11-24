@@ -1,0 +1,114 @@
+---
+title: "Search companies"
+description: "Discover company candidates using natural language with structured profiles, relevant excerpts, and source links."
+api: "POST https://revor.ai/api/v2/search/companies"
+authMethod: "bearer"
+playground: "simple"
+keywords:
+  - "Revor AI"
+  - "API v2"
+  - "Search companies"
+---
+
+Discover company candidates using natural language. Returns structured profiles, relevant excerpts, and source links.
+
+## At a glance
+
+|  |  |
+| --- | --- |
+| Method | `POST` |
+| Path | `/api/v2/search/companies` |
+| Permission | `search:write` and `search:read` to create; `search:read` to read a job |
+| Idempotency | Supported via `Idempotency-Key` header |
+| Returns | Async job result with company items |
+
+## Request
+
+Use the `Idempotency-Key` HTTP header for safe retries. `Prefer: wait=20` waits briefly for completion. Terminal responses use HTTP 200; running jobs use HTTP 202. Read `/api/v2/jobs/{id}` with the returned job ID.
+
+### Parameters
+
+<ParamField body="query" type="string" required>
+  Required, 1-1000 characters. Describe location, role or industry. These are search criteria, not strict database filters.
+</ParamField>
+
+<ParamField body="limit" default="10" type="integer">
+  Integer 1-25, default 10. Maximum candidates requested, not a guaranteed count of qualified results.
+</ParamField>
+
+<ParamField body="response.detail" default="standard" type="string">
+  `compact` or `standard`; default `standard`.
+</ParamField>
+
+<ParamField body="response.include" default="[]" type="string[]">
+  Default `[]`. Companies only accepts an empty array.
+</ParamField>
+
+<Warning>
+  Unknown parameters are rejected. Cursor pagination, arbitrary field extraction and guaranteed contact details are not supported.
+</Warning>
+
+### Example request
+
+```bash cURL
+curl -X POST "https://revor.ai/api/v2/search/companies" \
+  -H "Authorization: Bearer sk-revor-REPLACE_ME" \
+  -H "Content-Type: application/json" \
+  -H "Prefer: wait=20" \
+  -d '{
+    "query": "Manufacturing companies in Germany",
+    "limit": 10,
+    "response": {
+      "detail": "standard",
+      "include": []
+    }
+  }'
+```
+
+## Response
+
+The public job envelope includes `id`, `status`, `result`, `error` and `billing`. On success, `result` contains `query`, `returned_count` and `items`.
+
+Each item contains:
+
+- `id`: identifies the result within this job, not a global company ID
+- `target_kind`: `company`
+- `entity`: the structured profile
+- `evidence`: excerpts and source links
+
+### Entity fields
+
+<ResponseField name="Company compact" type="object">
+  `name`, `website`
+</ResponseField>
+
+<ResponseField name="Company standard" type="object">
+  Also `description`, `location.country/city/address`, `employee_count`, `founded_year`
+</ResponseField>
+
+<ResponseField name="evidence" type="object">
+  Original `excerpts`, and `sources` with `url` and `title`
+</ResponseField>
+
+<Note>
+  Missing scalar values are `null`, empty collections are `[]`, and unrequested expansions are omitted. Profile data is not live verified information. Source pages are separate from entity profiles; hosted profiles are not presented as company websites. Search does not create a prospect list or return ICP scores or verification statuses.
+</Note>
+
+### Behavior
+
+- **Rate limit:** Membership `expensive_create` (shared between API and MCP)
+- **Concurrency:** Shares the membership research-task concurrency allowance with people search
+- Idempotent retries and job reads do not charge again
+
+## Credits
+
+| Requested limit | Credits per search |
+| --- | --: |
+| 1-10 | 3 |
+| 11-25 | 8 |
+
+Successful zero-result searches are charged; failed search execution is not charged. Fewer returned results do not trigger extra searches or per-result repricing. Use terminal `billing.charged_credits` as the final charge.
+
+## MCP
+
+`revor_search_companies` uses the same parameters plus `idempotency_key`. It may return a terminal job immediately; otherwise follow `next_action` with `revor_get_job`. Do not repeat creation to check progress.

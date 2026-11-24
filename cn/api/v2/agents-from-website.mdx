@@ -1,0 +1,92 @@
+---
+title: "从官网创建智能体"
+description: "通过公司网站创建草稿智能体，返回异步公共任务。"
+api: "POST https://revor.ai/api/v2/agents/from-website"
+authMethod: "bearer"
+playground: "simple"
+keywords:
+  - "Revor AI"
+  - "API v2"
+  - "从官网创建智能体"
+---
+
+通过公司网站创建草稿智能体。返回公共 job，通过 `GET /api/v2/jobs/{id}` 查询结果。
+
+## 接口概览
+
+|  |  |
+| --- | --- |
+| 方法 | `POST` |
+| 路径 | `/api/v2/agents/from-website` |
+| 权限 | `agents:write` |
+| 幂等性 | 需要 `Idempotency-Key` |
+| 返回 | 公共 job |
+
+```bash cURL
+curl -X POST "https://revor.ai/api/v2/agents/from-website" \
+  -H "Authorization: Bearer sk-revor-REPLACE_ME" \
+  -H "Idempotency-Key: agent-from-website-001" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "company_website": "example.com",
+    "mode": "icebreaker",
+    "locale": "zh",
+    "name": "示例触达智能体"
+  }'
+```
+
+```json 请求体
+{
+  "company_website": "example.com",
+  "mode": "icebreaker",
+  "locale": "zh",
+  "name": "示例触达智能体"
+}
+```
+
+## 请求参数
+
+<ParamField body="company_website" type="string" required>
+  官网允许完整 HTTP(S) URL 或域名。
+</ParamField>
+
+<ParamField body="mode" type="string" required>
+  `icebreaker` 或 `autoreply`。
+</ParamField>
+
+<ParamField body="locale" type="string">
+  默认 `en`。
+</ParamField>
+
+<ParamField body="name" type="string">
+  可选。新智能体的名称。
+</ParamField>
+
+## 响应
+
+```json 202
+{
+  "ok": true,
+  "request_id": "req_xxx",
+  "item": {
+    "id": "job-uuid",
+    "status": "queued",
+    "type": "agent_from_website"
+  }
+}
+```
+
+## 行为说明
+
+- 返回 `202` 和公共 job；用 `GET /api/v2/jobs/{id}` 查询，成功结果含 `item.id`。
+- 两种模式均创建 `draft`，不自动绑定账号或发布。
+- 触达模式（`icebreaker`）使用现有 V2 配置，客服模式（`autoreply`）沿用 V1。
+- 重试同一请求使用原幂等键，改参数使用新键。
+
+## 错误码
+
+| HTTP | 错误码 | 含义 |
+| --- | --- | --- |
+| `400` | `agent_input_invalid` | 公共参数不符合契约 |
+| `403` | `permission_denied` | 缺少对应权限 |
+| `409` | `idempotency_conflict` | 同一个幂等键用于不同请求 |

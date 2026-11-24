@@ -1,0 +1,205 @@
+---
+title: "Stream prospect items"
+description: "The existing GET /api/v2/websets/{webset_id}/items/stream endpoint remains supported with the same parameters, response fields, and permissions. Both URLs execute the same operation."
+keywords: ["Revor AI", "API v2", "Stream prospect items"]
+api: "GET https://revor.ai/api/v2/prospect-lists/{webset_id}/prospects/stream"
+authMethod: "bearer"
+playground: "simple"
+---
+
+Uses Server-Sent Events to deliver Webset state, criteria, search strategy, and item changes. Requires `websets:read`. Opening the stream does not start discovery or consume credits.
+
+<Note>
+  The existing `GET /api/v2/websets/{webset_id}/items/stream` endpoint remains supported with the same parameters, response fields, and permissions. Both URLs execute the same operation.
+</Note>
+
+## At a glance
+
+|  |  |
+| --- | --- |
+| Method | `GET` |
+| Path | `https://revor.ai/api/v2/prospect-lists/\{webset_id\}/prospects/stream` |
+| Permission | `websets:read` |
+| Cost | Opening the stream does not consume credits |
+
+## Query parameters
+
+<ParamField query="cursor" type="number">
+  Snapshot `stream_cursor`; it may instead be sent as `Last-Event-ID`.
+</ParamField>
+
+<ParamField query="items_revision" type="number">
+  Snapshot `items_revision`.
+</ParamField>
+
+<ParamField query="match" default="qualified" type="string">
+  Same filter as the Items endpoint; defaults to `qualified`.
+</ParamField>
+
+<ParamField query="detail" default="compact" type="string">
+  `compact`, `standard`, or `full`; defaults to `compact`. Item fields match the corresponding REST mode.
+</ParamField>
+
+### Connecting from a snapshot
+
+First fetch an [Items snapshot](/api/v2/websets-items), then pass its checkpoint as a pair:
+
+```bash cURL
+curl -N "https://revor.ai/api/v2/prospect-lists/WEBSET_ID/prospects/stream?cursor=289&items_revision=18&match=qualified&detail=full" \
+  -H "Authorization: Bearer sk-revor-REPLACE_ME" \
+  -H "Accept: text/event-stream"
+```
+
+Use the same `match` and `detail` for the snapshot and stream. When switching either parameter, read a new snapshot in that mode and connect using its checkpoint.
+
+<Warning>
+  `cursor` and `items_revision` must both be present or both absent. If the URL cursor and `Last-Event-ID` are both present, they must match. Without a checkpoint, the stream starts at the latest event and only sends future changes.
+</Warning>
+
+<Note>
+  Native browser `EventSource` cannot set a Bearer header. Use a streaming `fetch` client in browsers.
+</Note>
+
+## Events
+
+### `ready`
+
+Connection metadata, current state, checkpoint, `heartbeat_ms=15000`, and the membership-specific `max_stream_ms`. The example below uses Free.
+
+```json ready
+{
+  "webset_id": "webset-uuid",
+  "request_id": "req_xxx",
+  "detail": "full",
+  "items_revision": 18,
+  "latest_items_revision": 18,
+  "stream_cursor": 289,
+  "webset_status": "verifying",
+  "progress": {
+    "stage": "verifying",
+    "goal": 25,
+    "verify_cap": 125,
+    "verified": 10,
+    "qualified": 8,
+    "full": 7,
+    "stop_reason": null,
+    "updated_at": "2026-10-31T06:00:00.000Z"
+  },
+  "failure": null,
+  "heartbeat_ms": 15000,
+  "max_stream_ms": 900000
+}
+```
+
+### `webset.state`
+
+Sent when public Webset status, progress, or business failure changes. `ready`, `webset.state`, and `complete` include the same `progress` and `failure` fields as the list detail endpoint. `failure.code` describes a failed discovery task; `error.code=stream_failed` describes a failure reading the stream itself.
+
+```json webset.state
+{
+  "webset_id": "webset-uuid",
+  "webset_status": "completed",
+  "progress": {
+    "stage": "completed",
+    "goal": 25,
+    "verify_cap": 125,
+    "verified": 29,
+    "qualified": 29,
+    "full": 28,
+    "stop_reason": "goal_reached",
+    "updated_at": "2026-10-31T06:01:00.000Z"
+  },
+  "failure": null,
+  "items_revision": 21,
+  "stream_cursor": 292
+}
+```
+
+### `webset.strategy`
+
+A complete display snapshot sent when criteria or strategy changes. Its fields match the [strategy endpoint](/api/v2/websets-strategy).
+
+If the complete snapshot exceeds the SSE frame limit, the stream sends `webset.strategy.ref` instead. Read its `strategy_url` with the same Bearer token to get the complete snapshot; item streaming continues.
+
+### `items.changed`
+
+```text
+id: 290
+event: items.changed
+data: {"webset_id":"...","detail":"full","items_revision":19,"chunk_index":0,"chunk_count":1,"upserts":[...],"removed_ids":[]}
+```
+
+- Upsert by item `id` and delete every `removed_ids` entry.
+- The SSE `id` becomes the new `stream_cursor`.
+- One revision may contain multiple chunks.
+- Commit `items_revision` only when `chunk_index + 1 === chunk_count`.
+- `upserts` use the requested `detail`. `standard` includes the complete entity, check counts, criterion summaries, and timestamps; `full` includes criterion reasoning, confidence, and reference URLs.
+- Details are saved with each event so replay uses the same version instead of joining current item data. Oversized fields or evidence arrays are explicitly marked `payload_truncated=true`; fetch REST Items for complete data.
+
+### `reset`
+
+The reason is `cursor_expired`, `revision_gap`, `revision_ahead`, or `detail_unavailable`. Stop applying that stream, replace local state with a complete snapshot using the same `match` and `detail`, and reconnect from its checkpoint. `detail_unavailable` means legacy compact events after the checkpoint cannot replay the requested details. The server does not silently downgrade the requested mode.
+
+```json reset
+{
+  "webset_id": "webset-uuid",
+  "reason": "revision_gap",
+  "items_revision": 21,
+  "stream_cursor": 292
+}
+```
+
+### `complete`
+
+The terminal state and final item changes were delivered. The server closes the stream. Do not close early solely because `webset.state=completed`.
+
+```json complete
+{
+  "webset_id": "webset-uuid",
+  "webset_status": "completed",
+  "items_revision": 21,
+  "stream_cursor": 292
+}
+```
+
+### `reconnect`
+
+A connection's lifetime depends on the effective membership at admission; use `ready.max_stream_ms` and the table below. At the limit the server sends `reconnect` and closes the connection. Reconnect immediately with the event's `cursor + items_revision`. Discovery continues in the background.
+
+```json reconnect
+{
+  "webset_id": "webset-uuid",
+  "cursor": 292,
+  "items_revision": 21
+}
+```
+
+### `error`
+
+A post-connect read failure with `code=stream_failed` and a `request_id`. Back off and reconnect from the last complete checkpoint.
+
+```json error
+{
+  "webset_id": "webset-uuid",
+  "code": "stream_failed",
+  "request_id": "req_xxx"
+}
+```
+
+Heartbeats are `: heartbeat ...` SSE comments, not business events.
+
+## Concurrency and recovery
+
+| Membership | Maximum lifetime | Per API key | Per account | Per account and prospect list |
+| --- | ---: | ---: | ---: | ---: |
+| Free | 15 minutes | 2 | 5 | 2 |
+| Starter | 30 minutes | 3 | 6 | 2 |
+| Scale | 45 minutes | 5 | 10 | 3 |
+| Pro | 60 minutes | 8 | 15 | 3 |
+| Enterprise | 90 minutes | 15 | 30 | 5 |
+
+All limits apply simultaneously. Items and Find More streams share these allowances. Each server process also permits at most 50 connections. Excess connections return `429 sse_connection_limit_exceeded`.
+
+Opening a connection consumes one read request. Events, heartbeats, and lease renewals within that connection do not consume additional RPM; reconnecting is a new request. After a terminal state and the final changes, the server sends `complete` and closes automatically. Client disconnects and stream errors also release the subscription and allowance without waiting for the maximum lifetime.
+
+Shared connection allowances use five-minute leases renewed every minute. A renewal failure closes the stream. If the process crashes, abandoned leases expire within approximately five minutes. Events are retained for 24 hours; REST Items remain the source of truth.

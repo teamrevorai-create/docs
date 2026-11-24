@@ -1,0 +1,146 @@
+---
+title: "Agent configuration and channel bindings"
+sidebarTitle: "Overview"
+description: "Endpoints for managing agent configuration, channel bindings, and multi-round outreach sequences."
+keywords:
+  - "Revor AI"
+  - "API v2"
+  - "Agent configuration and channel bindings"
+---
+
+These endpoints reuse Console configuration services. Website creation uses a separate backend workflow; the corresponding [MCP management tools](/mcp/tools) reuse these public services.
+
+<Note>
+  Use `Authorization: Bearer <API_KEY>`. Resources are scoped to the key owner. The rolling user-default preset includes these permissions; the readonly preset only includes `agents:read`. Explicit denials remain effective. Minimum tier: Free.
+</Note>
+
+Reads use the `read` rate-limit bucket. Writes use `outreach_write`.
+
+## Endpoints
+
+| Method | Path | Description |
+| --- | --- | --- |
+| `GET` | `/api/v2/agents` | [List agents](/api/v2/agents-list) |
+| `GET` | `/api/v2/agents/{agentId}` | [Get agent](/api/v2/agents-get) |
+| `PATCH` | `/api/v2/agents/{agentId}` | [Update agent](/api/v2/agents-update) |
+| `POST` | `/api/v2/agents/preview` | [Preview message](/api/v2/agents-preview) |
+| `POST` | `/api/v2/agents/from-website` | [Create from website](/api/v2/agents-from-website) |
+| `PUT` | `/api/v2/agents/{agentId}/channel-bindings/{channel}` | [Bind channel](/api/v2/agents-bind-channel) |
+| `DELETE` | `/api/v2/agents/{agentId}/channel-bindings/{channel}` | [Unbind channel](/api/v2/agents-unbind-channel) |
+| `GET` | `/api/v2/agents/{agentId}/sequence` | [Get sequence](/api/v2/agents-sequence-get) |
+| `PUT` | `/api/v2/agents/{agentId}/sequence` | [Update sequence](/api/v2/agents-sequence-update) |
+| `POST` | `/api/v2/agents/{agentId}/sequence/generate` | [Generate round content](/api/v2/agents-sequence-generate) |
+| `POST` | `/api/v2/agents/{agentId}/sequence/preview` | [Preview follow-up](/api/v2/agents-sequence-preview) |
+
+<CardGroup cols={2}>
+  <Card title="List agents" icon="list" href="/api/v2/agents-list">
+    Paginated summary list of all agents.
+  </Card>
+
+  <Card title="Get agent" icon="eye" href="/api/v2/agents-get">
+    Read full configuration and channel bindings.
+  </Card>
+
+  <Card title="Update agent" icon="pen" href="/api/v2/agents-update">
+    Partially edit agent configuration with optimistic concurrency.
+  </Card>
+
+  <Card title="Preview message" icon="play" href="/api/v2/agents-preview">
+    Preview a single message before sending.
+  </Card>
+
+  <Card title="Create from website" icon="globe" href="/api/v2/agents-from-website">
+    Create a draft agent from a company website.
+  </Card>
+
+  <Card title="Bind channel" icon="link" href="/api/v2/agents-bind-channel">
+    Bind or rebind a channel to an agent.
+  </Card>
+
+  <Card title="Unbind channel" icon="unlink" href="/api/v2/agents-unbind-channel">
+    Unbind a channel from an agent.
+  </Card>
+
+  <Card title="Get sequence" icon="bars-staggered" href="/api/v2/agents-sequence-get">
+    Read outreach sequence configuration.
+  </Card>
+
+  <Card title="Update sequence" icon="floppy-disk" href="/api/v2/agents-sequence-update">
+    Save or disable a multi-round sequence.
+  </Card>
+
+  <Card title="Generate round content" icon="wand-magic-sparkles" href="/api/v2/agents-sequence-generate">
+    Generate content for a follow-up round.
+  </Card>
+
+  <Card title="Preview follow-up" icon="play" href="/api/v2/agents-sequence-preview">
+    Preview a follow-up message in a sequence.
+  </Card>
+</CardGroup>
+
+---
+
+## Shared concepts
+
+### Response envelope
+
+Successful responses use the standard envelope:
+
+```json
+{
+  "ok": true,
+  "request_id": "string",
+  "item": { ... }
+}
+```
+
+List responses include `items`, `total`, `page`, and `limit`.
+
+### Agent summary vs detail
+
+Summaries expose `id`, `name`, `description`, `status`, `default_mode`, `generation_contract_version`, and `updated_at`. Detail responses additionally include editable configuration, `config_mode`, `created_at`, and `channel_bindings`.
+
+Each `linkedin`/`whatsapp`/`email` binding is `null` or an object containing `account_id` and `bound_at`. Use the existing `GET /api/v2/connect/accounts` to select an account.
+
+### Optimistic concurrency
+
+Every mutation requires `expected_updated_at`, copied exactly from the latest detail response. Stale versions return `409`; read and reconcile changes before retrying.
+
+---
+
+## MCP tools
+
+| Tool | Purpose | Endpoint |
+| --- | --- | --- |
+| `revor_preview_agent_message` | Preview a single message | `POST /api/v2/agents/preview` |
+| `revor_get_agent_sequence` | Read sequence | `GET /api/v2/agents/{agentId}/sequence` |
+| `revor_update_agent_sequence` | Save sequence | `PUT /api/v2/agents/{agentId}/sequence` |
+| `revor_generate_agent_sequence_content` | Generate round content | `POST /api/v2/agents/{agentId}/sequence/generate` |
+| `revor_preview_agent_sequence` | Preview follow-up | `POST /api/v2/agents/{agentId}/sequence/preview` |
+
+---
+
+## Errors and retries
+
+| HTTP | Code | Meaning |
+| --- | --- | --- |
+| `400` | `agent_input_invalid` | Request does not match the contract |
+| `400` | `agent_configuration_invalid` | Violates business validation rules |
+| `403` | `permission_denied` | Missing required permission |
+| `404` | `agent_not_found` | Agent does not exist, was deleted, or belongs to another user |
+| `404` | `agent_sequence_unavailable` | Feature not enabled for this agent |
+| `409` | `agent_config_conflict` | Version expired or concurrent modification |
+| `409` | `agent_sequence_config_conflict` | Sequence version expired or concurrent modification |
+| `409` | `agent_account_already_bound` | Account occupancy conflict |
+| `409` | `agent_knowledge_base_not_found` | Linked knowledge base is unavailable |
+| `500` | `agent_operation_failed` | Operation failed. Read current state before retrying |
+
+### Retry rules
+
+- Base configuration reads, edits, and binding operations are synchronous.
+- Website creation, content generation, and message previews return asynchronous jobs.
+- Sequence publication returns its version synchronously; workers synchronize linked plans.
+
+<Warning>
+  Base configuration persistence and subsequent side effects are not one transaction. After a `500`, read current state before retrying. Replaying an old base configuration version returns a conflict rather than an idempotent success.
+</Warning>

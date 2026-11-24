@@ -1,0 +1,97 @@
+---
+title: "Find and like a relevant LinkedIn post"
+description: "Scans a target LinkedIn user's recent posts, selects one relevant to the supplied topic or context, and likes it automatically. The caller does not provide a post URL. If no post qualifies, the job still succeeds and returns result.status=skipped."
+keywords: ["Revor AI", "API v2", "Find and like a relevant LinkedIn post"]
+api: "POST https://revor.ai/api/v2/outreach/linkedin/post-likes"
+authMethod: "bearer"
+playground: "simple"
+---
+
+Scans a target LinkedIn user's recent posts, selects one relevant to the supplied topic or context, and likes it automatically. The caller does not provide a post URL. If no post qualifies, the job still succeeds and returns `result.status=skipped`.
+
+|  |  |
+| --- | --- |
+| Method | `POST` |
+| Permission | LinkedIn engagement create |
+| Idempotency | Optional; reuse the same `Idempotency-Key` for safe retries |
+| Returns | Job ID |
+
+<Warning>
+  Send `Authorization` and `Content-Type: application/json`. `Idempotency-Key` is optional; for safe retries, send one and reuse the same value.
+</Warning>
+
+## Request body
+
+<ParamField body="profile_url" type="string" required>
+  HTTPS profile URL on `linkedin.com` or `www.linkedin.com` with an `/in/…` path; no URL credentials or nonstandard port.
+</ParamField>
+
+<ParamField body="content" type="string" required>
+  Topic used to judge relevance, not text to publish or send. Maximum 16,000 UTF-8 bytes. For example: `AI sales automation and outbound workflow`.
+</ParamField>
+
+<ParamField body="account_id" type="string">
+  Connect account used for the like. Required when multiple usable LinkedIn accounts exist.
+</ParamField>
+
+<ParamField body="post_limit" default="20" type="number">
+  Number of candidate posts; default 20, range 1-50.
+</ParamField>
+
+<ParamField body="locale" default="en" type="string">
+  `en` or `zh`.
+</ParamField>
+
+<ParamField body="min_channel_task_interval_seconds" type="number">
+  Minimum LinkedIn job interval, range 60-86400 seconds.
+</ParamField>
+
+## Example request
+
+```bash cURL
+curl -X POST "https://revor.ai/api/v2/outreach/linkedin/post-likes" \
+  -H "Authorization: Bearer sk-revor-REPLACE_ME" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "account_id": "connect_account_xxx",
+    "profile_url": "https://www.linkedin.com/in/example/",
+    "content": "AI sales automation and outbound workflow",
+    "post_limit": 20,
+    "locale": "en"
+  }'
+```
+
+## Response and result
+
+The creation endpoint returns HTTP `202`, with `item.action` set to `outreach.linkedin.post_like` and `item.channel` set to `linkedin`. Save `item.id`, then call:
+
+```http GET
+GET /api/v2/jobs/{id}
+```
+
+<Note>
+  When no relevant post is found, `item.result.status=skipped` and `reason` explains why.
+</Note>
+
+### Result example
+
+```json liked
+{
+  "status": "liked",
+  "liked_post": {
+    "url": "https://www.linkedin.com/posts/example_activity-123"
+  },
+  "reason": "The post matches the requested topic."
+}
+```
+
+## Common errors
+
+| HTTP | Code | Description |
+| --- | --- | --- |
+| `400` | `profile_url_required` / `content_required` | The target or relevance context is missing. |
+| `400` | `invalid_profile_url` | `profile_url` is not a LinkedIn profile URL. |
+| `400` | `post_limit_invalid` / `locale_invalid` | A parameter is outside its valid range. |
+| `403` | `permission_denied` | The key cannot create LinkedIn engagement. |
+| `413` | `request_payload_too_large` | The request body exceeds 32 KB. |
+| `503` | `task_unavailable` | The job cannot be created temporarily. |

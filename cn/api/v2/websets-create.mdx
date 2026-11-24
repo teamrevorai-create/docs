@@ -1,0 +1,103 @@
+---
+title: "创建潜客名单"
+description: "原入口 POST /api/v2/websets 继续支持，参数、返回字段和权限均保持一致。两个 URL 执行同一操作。"
+keywords: ["Revor AI", "API v2", "创建潜客名单"]
+api: "POST https://revor.ai/api/v2/prospect-lists"
+authMethod: "bearer"
+playground: "simple"
+---
+
+根据自然语言目标创建企业或人物名单。接口返回 HTTP `202`；后续条件生成、搜索和核验异步执行。
+
+## 接口概览
+
+|  |  |
+| --- | --- |
+| 方法 | `POST` |
+| 路径 | `/api/v2/prospect-lists` |
+| 权限 | `websets:write` |
+| 幂等性 | 建议传入 `Idempotency-Key`，网络超时重试时复用原值 |
+| 返回 | `202`，含 `webset` 与 `preparation_job` |
+
+原入口 `POST /api/v2/websets` 继续支持，参数、返回字段和权限均保持一致。两个 URL 执行同一操作。
+
+## 请求体
+
+<ParamField body="query" type="string" required>
+  自然语言条件，最长 2000 字符。
+</ParamField>
+
+<ParamField body="title" type="string">
+  名单名称，最长 200 字符。
+</ParamField>
+
+<ParamField body="count" default="25" type="integer">
+  `25`、`100`、`500`、`1000`；默认 `25`，并受会员档位限制。
+</ParamField>
+
+<ParamField body="target_kind" default="company" type="string">
+  `company` 或 `person`；默认 `company`。
+</ParamField>
+
+<ParamField body="locale" default="en" type="string">
+  `zh` 或 `en`；默认 `en`。
+</ParamField>
+
+```bash cURL
+curl -X POST "https://revor.ai/api/v2/prospect-lists" \
+  -H "Authorization: Bearer sk-revor-REPLACE_ME" \
+  -H "Idempotency-Key: webset-create-001" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "北美地区的挖掘机制造商、经销商和租赁服务商",
+    "title": "北美挖掘机公司",
+    "count": 25,
+    "target_kind": "company",
+    "locale": "zh"
+  }'
+```
+
+```json 请求体
+{
+  "query": "北美地区的挖掘机制造商、经销商和租赁服务商",
+  "title": "北美挖掘机公司",
+  "count": 25,
+  "target_kind": "company",
+  "locale": "zh"
+}
+```
+
+## 响应
+
+HTTP `202` 已接受：
+
+```json 202
+{
+  "ok": true,
+  "request_id": "req_xxx",
+  "webset": {
+    "id": "webset-uuid",
+    "status": "generating_criteria",
+    "count": 25,
+    "target_kind": "company"
+  },
+  "preparation_job": {
+    "id": "job-uuid",
+    "status": "queued"
+  }
+}
+```
+
+<Warning>
+  保存 `webset.id`。`202` 和 `preparation_job.status=queued` 只表示任务已接受，不代表名单完成。建议立即获取 [Items 快照](/cn/api/v2/websets-items)，再连接 [Items SSE](/cn/api/v2/websets-items-stream)。
+</Warning>
+
+## 错误码
+
+| HTTP | Code | 说明 |
+| --- | --- | --- |
+| `400` | `webset_query_required` / `webset_query_too_long` | 搜索条件缺失或过长。 |
+| `400` | `webset_count_invalid` | 数量不是允许值。 |
+| `400` | `webset_target_kind_unsupported` | 目标类型无效。 |
+| `403` | `webset_count_not_available_for_tier` | 当前会员档位不支持该数量。 |
+| `409` | `idempotency_conflict` | 同一个幂等键用于不同请求。 |

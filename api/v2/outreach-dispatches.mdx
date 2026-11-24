@@ -1,0 +1,131 @@
+---
+title: "Send one outreach message"
+description: "Uses a connected account to send an Email or WhatsApp message, or perform one LinkedIn outreach action. For an existing LinkedIn connection, it sends a message; otherwise, it sends a connection request with a note."
+keywords: ["Revor AI", "API v2", "Send one outreach message"]
+api: "POST https://revor.ai/api/v2/outreach/dispatches"
+authMethod: "bearer"
+playground: "simple"
+---
+
+Uses a connected account to send an Email or WhatsApp message, or perform one LinkedIn outreach action. For an existing LinkedIn connection, it sends a message; otherwise, it sends a connection request with a note.
+
+The endpoint returns HTTP `202` and a job ID. Use the unified jobs endpoint to retrieve the final result.
+
+|  |  |
+| --- | --- |
+| Method | `POST` |
+| Permission | Single outreach create |
+| Idempotency | Optional; reuse `Idempotency-Key` for safe retries |
+| Returns | Job ID |
+
+## Headers
+
+<ParamField header="Authorization" type="string" required>
+  `Bearer sk-revor-...`.
+</ParamField>
+
+<ParamField header="Content-Type" type="string" required>
+  `application/json`.
+</ParamField>
+
+<ParamField header="Idempotency-Key" type="string">
+  Reliable retry identifier. Reuse it when retrying the same business operation to prevent duplicate sends.
+</ParamField>
+
+## Request body
+
+<ParamField body="account_id" type="string" required>
+  Obtained from the Connect accounts endpoint.
+</ParamField>
+
+<ParamField body="channel" type="string" required>
+  `email`, `linkedin`, or `whatsapp`; must match the account channel.
+</ParamField>
+
+<ParamField body="action" type="string" required>
+  Must be `outreach`.
+</ParamField>
+
+<ParamField body="recipient" type="object" required>
+  Recipient details.
+</ParamField>
+
+<ParamField body="content" type="object" required>
+  Content to send.
+</ParamField>
+
+<ParamField body="metadata" type="object">
+  Custom caller context.
+</ParamField>
+
+<ParamField body="min_channel_task_interval_seconds" default="60" type="number">
+  Minimum job interval for the same user and channel. Defaults to 60; allowed range is 60-86400 seconds.
+</ParamField>
+
+Intervals are independent across channels. For batch submissions, use a different interval between 180 and 360 seconds for each job to avoid a fixed sending cadence.
+
+## Channel-specific fields
+
+| Channel | recipient | content |
+| --- | --- | --- |
+| Email | `address`, optional `name` | Requires `subject` and either `text` or `html`. |
+| LinkedIn | `profile_url` | Provide `text` or a valid attachment. Sends a message when connected or a connection request with a note otherwise. |
+| WhatsApp | `phone` | Provide `text` or a valid attachment. |
+
+Attachments contain `filename` and `contentBase64`, with optional `contentType`.
+
+### Input limits
+
+<Warning>
+  Input limits also apply to MCP outreach: at most 10 attachments, 5,000,000 decoded bytes per file and 8,000,000 decoded bytes in total. `contentBase64` must be standard Base64 with padding when required, without whitespace or a data-URL prefix. Filenames and MIME types are each limited to 255 UTF-8 bytes.
+</Warning>
+
+`subject` is limited to 1,024 UTF-8 bytes; `text` and `html` to 256,000 bytes each. `metadata` is limited to 16,000 serialized JSON bytes and 8 object/array levels. The full request must fit within 12,000,000 bytes. Oversized input is rejected, not truncated. LinkedIn profile URLs must use HTTPS on `linkedin.com` or `www.linkedin.com`, with an `/in/…` path, no URL credentials and no nonstandard port.
+
+## Example request
+
+```bash cURL
+curl -X POST "https://revor.ai/api/v2/outreach/dispatches" \
+  -H "Authorization: Bearer sk-revor-REPLACE_ME" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "account_id": "connect_account_xxx",
+    "channel": "email",
+    "action": "outreach",
+    "recipient": { "address": "prospect@example.com", "name": "Alex" },
+    "content": { "subject": "Quick introduction", "text": "Hi Alex, ..." }
+  }'
+```
+
+## Example response
+
+<Note>
+  Call `GET /api/v2/jobs/job_uuid` for the result. Successful creation only means that the job was accepted, not that the message was sent.
+</Note>
+
+```json 200
+{
+  "ok": true,
+  "request_id": "req_xxx",
+  "item": {
+    "id": "job_uuid",
+    "status": "scheduled",
+    "action": "outreach.dispatch",
+    "channel": "email",
+    "scheduled_at": "2026-08-26T10:00:00.000Z"
+  }
+}
+```
+
+## Common errors
+
+| HTTP | Code | Description |
+| --- | --- | --- |
+| `400` | `account_id_required` / `invalid_channel` / `invalid_action` | A basic parameter is invalid. |
+| `400` | `recipient_address_required` / `recipient_profile_url_required` / `recipient_phone_required` | The recipient for the selected channel is missing. |
+| `400` | `content_subject_required` / `content_text_or_html_required` / `content_text_or_attachment_required` | Required content for the channel is missing. |
+| `400` | `attachment_invalid` / `attachments_invalid` | The attachment format is invalid. |
+| `400` | `min_channel_task_interval_seconds_invalid` | The channel job interval is outside the allowed range. |
+| `403` | `permission_denied` | The key cannot create a single outreach action. |
+| `413` | `request_payload_too_large` | The request body exceeds 12 MB. |
+| `503` | `task_unavailable` | The job cannot be created temporarily. |

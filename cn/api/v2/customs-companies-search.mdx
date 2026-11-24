@@ -1,0 +1,107 @@
+---
+title: "按商品和国家发现企业"
+description: "根据贸易记录中的商品、国家和时间条件，返回进口商或出口商列表。"
+api: "POST https://revor.ai/api/v2/customs/companies/search"
+authMethod: "bearer"
+playground: "simple"
+keywords:
+  - "Revor AI"
+  - "API v2"
+  - "按商品和国家发现企业"
+---
+
+根据贸易记录中的商品、国家和时间条件，返回进口商或出口商列表。不需要预先知道公司名称。
+
+## 接口概览
+
+|  |  |
+| --- | --- |
+| 方法 | `POST` |
+| 路径 | `/api/v2/customs/companies/search` |
+| 返回 | 符合市场筛选条件的企业列表 |
+| 幂等性 | 支持 |
+
+## 请求
+
+### 参数
+
+<ParamField body="company_role" type="string" required>
+  返回的企业角色：`importer` 表示买家/进口商，`exporter` 表示供应商/出口商。
+</ParamField>
+
+<ParamField body="catalog" type="string">
+  `imports` 或 `exports`；省略时按企业角色使用常用目录。
+</ParamField>
+
+<ParamField body="start_date" type="date" required>
+  `YYYY-MM-DD`。
+</ParamField>
+
+<ParamField body="end_date" type="date" required>
+  `YYYY-MM-DD`，查询跨度最多一年。
+</ParamField>
+
+<ParamField body="hs_code" type="string">
+  单个 2、4、6、8 或 10 位数字，例如机械大类 `84`、挖掘机 `8429`；不支持逗号/空格分隔的多值或 `84-85` 范围。多个品类请分别查询。
+</ParamField>
+
+<ParamField body="product_description" type="string">
+  商品关键词；没有准确 HS Code 时可以使用。
+</ParamField>
+
+<ParamField body="origin_country_code" type="string">
+  货物来源国或原产国代码，例如 `CHN`。
+</ParamField>
+
+<ParamField body="destination_country_code" type="string">
+  货物目的市场代码，例如俄罗斯 `RUS`、巴西 `BRA`、沙特 `SAU`、阿联酋 `ARE`。
+</ParamField>
+
+<ParamField body="page" default="1" type="integer">
+  1-1000，默认 1。
+</ParamField>
+
+<ParamField body="page_size" default="20" type="integer">
+  1-20，默认 20。
+</ParamField>
+
+<ParamField body="sort_by" default="trade_count" type="string">
+  `trade_count`、`amount_usd`、`quantity` 或 `weight`，默认 `trade_count`。
+</ParamField>
+
+<ParamField body="sort_order" default="desc" type="string">
+  `asc` 或 `desc`，默认 `desc`。
+</ParamField>
+
+<Warning>
+  `hs_code`、`product_description`、`origin_country_code`、`destination_country_code` 至少提供一个，避免提交没有任何业务范围的全库查询。行业名称不是统一海关分类；"机械行业"这类宽泛需求应先选择合适的 HS Code 或商品关键词。
+</Warning>
+
+### 请求示例
+
+```bash cURL
+curl -X POST "https://revor.ai/api/v2/customs/companies/search" \
+  -H "Authorization: Bearer sk-revor-REPLACE_ME" \
+  -H "Content-Type: application/json" \
+  -H "Prefer: wait=20" \
+  -d '{
+    "company_role": "importer",
+    "catalog": "imports",
+    "start_date": "2025-09-01",
+    "end_date": "2026-08-31",
+    "hs_code": "8429",
+    "product_description": "excavator",
+    "origin_country_code": "CHN",
+    "destination_country_code": "BRA",
+    "page": 1,
+    "page_size": 20,
+    "sort_by": "trade_count",
+    "sort_order": "desc"
+  }'
+```
+
+## 响应
+
+任务成功后，`item.result.data.items` 返回标准化企业字段：`company_name`、`country`、`country_code`、`trade_count`、`amount_usd`、`quantity`、`weight` 和金额占比等。
+
+不同数据覆盖范围不一定返回全部统计字段。查询按实际返回的企业行数结算 credits；返回 0 行时最终消耗 0 credits。

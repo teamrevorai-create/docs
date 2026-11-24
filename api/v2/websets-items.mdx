@@ -1,0 +1,146 @@
+---
+title: "List prospect items"
+description: "Imported tables support pagination. For imports, default match=qualified or verified returns all imported rows; full, partial, and rejected return empty pages. Imported rows have match.status=not_applicable, match.score=null, null check counts, and empty criteria. Scoring tiers and SSE guidance below apply only to searches. Standard/full detail retains the entity contact email; this endpoint does not return complete contact collections."
+keywords: ["Revor AI", "API v2", "List prospect items"]
+api: "GET https://revor.ai/api/v2/prospect-lists/{webset_id}/prospects"
+authMethod: "bearer"
+playground: "simple"
+---
+
+Returns the authoritative Items snapshot for a Webset. It can be read while discovery is running; `provisional=true` means an item may still change or be removed. Requires `websets:read`.
+
+<Note>
+  The existing `GET /api/v2/websets/{webset_id}/items` endpoint remains supported with the same parameters, response fields, and permissions. Both URLs execute the same operation.
+</Note>
+
+## At a glance
+
+|  |  |
+| --- | --- |
+| Method | `GET` |
+| Path | `https://revor.ai/api/v2/prospect-lists/\{webset_id\}/prospects` |
+| Permission | `websets:read` |
+
+## Query parameters
+
+<ParamField query="match" default="qualified" type="string">
+  One of `qualified`, `full`, `partial`, `rejected`, or `verified`.
+</ParamField>
+
+<ParamField query="detail" default="compact" type="string">
+  One of `compact`, `standard`, or `full`.
+</ParamField>
+
+<ParamField query="limit" default="10" type="number">
+  Maximum 50 for `compact`, 25 for `standard`, and 10 for `full`.
+</ParamField>
+
+<ParamField query="cursor" type="string">
+  The previous page's `next_cursor`.
+</ParamField>
+
+### Match filter behavior
+
+For search lists, `qualified` returns `full + partial` and `verified` returns `full + partial + rejected`. A search item's `match.status` is `full`, `partial`, or `rejected`.
+
+In the current weighted-scoring mode, top-level `match.score` is a `0–100` weighted score: `80–100` is `full`, `40–79` is `partial`, and `0–39` is `rejected`. Per-criterion confidence or score describes one criterion and should not be confused with the top-level score.
+
+### Imports vs. searches
+
+Imported tables support pagination. For imports, default `match=qualified` or `verified` returns all imported rows; `full`, `partial`, and `rejected` return empty pages. Imported rows have `match.status=not_applicable`, `match.score=null`, null check counts, and empty criteria. Scoring tiers and SSE guidance below apply only to searches.
+
+## Detail levels
+
+| Detail | What is included |
+| --- | --- |
+| `compact` | Name, website or profile, industry or title, match status, and score. |
+| `standard` | Adds the complete entity, check counts, and criterion summaries. |
+| `full` | Adds per-criterion reasoning, confidence, and reference URLs. |
+
+## Request example
+
+```bash cURL
+curl -H "Authorization: Bearer sk-revor-REPLACE_ME" \
+  "https://revor.ai/api/v2/prospect-lists/WEBSET_ID/prospects?match=qualified&detail=compact&limit=50"
+```
+
+## Response
+
+```json 200
+{
+  "ok": true,
+  "request_id": "req_xxx",
+  "items": [
+    {
+      "id": "item-uuid",
+      "target_kind": "company",
+      "entity": {
+        "name": "Example Equipment",
+        "website": "https://example.com",
+        "industry": "Construction Equipment"
+      },
+      "match": {
+        "status": "full",
+        "score": 92
+      },
+      "provisional": true
+    }
+  ],
+  "detail": "compact",
+  "next_cursor": null,
+  "has_more": false,
+  "webset_status": "verifying",
+  "items_revision": 18,
+  "stream_cursor": 289
+}
+```
+
+### Response fields
+
+<ResponseField name="ok" type="boolean">
+  Whether the request succeeded.
+</ResponseField>
+
+<ResponseField name="request_id" type="string">
+  Request identifier.
+</ResponseField>
+
+<ResponseField name="items" type="object[]">
+  Items on the current page.
+</ResponseField>
+
+<ResponseField name="detail" type="string">
+  The requested detail level.
+</ResponseField>
+
+<ResponseField name="next_cursor" type="string | null">
+  Cursor for the next page; `null` when no cursor is returned.
+</ResponseField>
+
+<ResponseField name="has_more" type="boolean">
+  Whether more pages are available.
+</ResponseField>
+
+<ResponseField name="webset_status" type="string">
+  Current Webset status.
+</ResponseField>
+
+<ResponseField name="items_revision" type="number">
+  Items revision number for SSE checkpointing.
+</ResponseField>
+
+<ResponseField name="stream_cursor" type="number">
+  SSE cursor from before this request; pass with `items_revision` to open a stream.
+</ResponseField>
+
+## Pagination and SSE checkpoint
+
+For multiple pages, retain the **first page's** `stream_cursor + items_revision`, follow `next_cursor` through the remaining pages, then open SSE from the first-page checkpoint. Changes during pagination are replayed from that point. Merge all items by `id` to tolerate overlap between pages and events.
+
+<Note>
+  `next_cursor` is an opaque REST pagination cursor. `stream_cursor` is a numeric SSE event cursor. They are not interchangeable.
+</Note>
+
+<Warning>
+  `entity.name` is a display name, not a guaranteed unique legal name. Parent companies, regional subsidiaries, or separate entities under one brand may share it. Always use item `id` as the unique key and use the official website to distinguish company entities.
+</Warning>

@@ -1,0 +1,90 @@
+---
+title: "绑定渠道账号"
+description: "为指定智能体绑定或换绑渠道账号。"
+api: "PUT https://revor.ai/api/v2/agents/{agentId}/channel-bindings/{channel}"
+authMethod: "bearer"
+playground: "simple"
+keywords:
+  - "Revor AI"
+  - "API v2"
+  - "绑定渠道账号"
+---
+
+为指定智能体绑定或换绑渠道账号。每次只修改指定渠道，保留其他渠道。
+
+## 接口概览
+
+|  |  |
+| --- | --- |
+| 方法 | `PUT` |
+| 路径 | `/api/v2/agents/{agentId}/channel-bindings/{channel}` |
+| 权限 | `agents.bindings:write` |
+| 限流桶 | `outreach_write` |
+| 返回 | 更新后的绑定信息 |
+
+## 路径参数
+
+<ParamField path="agentId" type="string" required>
+  智能体 UUID。
+</ParamField>
+
+<ParamField path="channel" type="string" required>
+  仅允许 `linkedin`、`whatsapp`、`email`。
+</ParamField>
+
+## 请求体
+
+<ParamField body="expected_updated_at" type="string" required>
+  最近一次基础配置 GET 返回的 `updated_at`，从 `GET /api/v2/agents/{agentId}` 原样取得。
+</ParamField>
+
+<ParamField body="account_id" type="string" required>
+  从 `GET /api/v2/connect/accounts` 查询取得的账号 UUID。
+</ParamField>
+
+```bash cURL
+curl -X PUT "https://revor.ai/api/v2/agents/{agentId}/channel-bindings/email" \
+  -H "Authorization: Bearer sk-revor-REPLACE_ME" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "expected_updated_at": "2026-11-13T04:44:50.096+00:00",
+    "account_id": "account-uuid"
+  }'
+```
+
+```json 请求体
+{
+  "expected_updated_at": "从 GET 原样取得",
+  "account_id": "从账号查询取得的 UUID"
+}
+```
+
+## 响应
+
+```json 200
+{
+  "ok": true,
+  "request_id": "req_xxx",
+  "item": {
+    "channel": "email",
+    "account_id": "account-uuid",
+    "bound_at": "2026-11-13T05:00:00.000+00:00"
+  }
+}
+```
+
+## 行为说明
+
+- 每次只修改指定渠道，保留其他渠道。
+- 普通 PATCH 不接受绑定字段。
+- 账号归属、渠道匹配、客服智能体占用与启用状态限制复用原服务。
+
+## 错误码
+
+| HTTP | 错误码 | 含义 |
+| --- | --- | --- |
+| `400` | `agent_input_invalid` | 参数错误 |
+| `403` | `permission_denied` | 缺少 `agents.bindings:write` |
+| `404` | `agent_not_found` | 智能体不存在 |
+| `409` | `agent_account_already_bound` | 账号占用冲突 |
+| `409` | `agent_config_conflict` | 版本过期或并发修改 |

@@ -1,0 +1,67 @@
+---
+title: "Get import status"
+description: "Poll import progress and get the resulting table IDs after an import run."
+api: "GET https://revor.ai/api/v2/imports/{runId}"
+authMethod: "bearer"
+playground: "simple"
+keywords:
+  - "Revor AI"
+  - "API v2"
+  - "Get import status"
+---
+
+Poll the status and results of an import run. Read `webset_ids` to locate the tables created or appended to.
+
+## Overview
+
+| | |
+| --- | --- |
+| Method | `GET` |
+| Path | `/api/v2/imports/{runId}` |
+| Permission | `prospects.imports:read` |
+| Returns | Import run progress, row counts, and table IDs |
+
+## Path parameters
+
+<ParamField path="runId" type="string" required>
+  Import run UUID.
+</ParamField>
+
+## Response
+
+```json 200
+{
+  "item": {
+    "id": "import-run-uuid",
+    "webset_id": "table-uuid",
+    "source_kind": "csv",
+    "status": "completed",
+    "received_rows": 100,
+    "inserted_rows": 95,
+    "merged_rows": 5,
+    "added_contacts": 10,
+    "added_channels": 15,
+    "items_revision": 2
+  }
+}
+```
+
+The response `item` contains:
+
+- `id` - import run ID
+- `webset_id` - target table ID
+- `source_kind` - `"records"`, `"csv"`, or `"xlsx"`
+- `status` - import status, for example `"completed"`
+- `received_rows`
+- `inserted_rows`
+- `merged_rows`
+- `added_contacts`
+- `added_channels`
+- `items_revision`
+
+For file imports, `webset_ids` lists the resulting tables.
+
+```bash cURL
+curl -X GET "https://revor.ai/api/v2/imports/import-run-uuid" \
+  -H "Authorization: Bearer sk-revor-REPLACE_ME"
+```

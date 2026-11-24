@@ -1,0 +1,59 @@
+---
+title: "Stop outreach"
+description: "Stop a smart outreach plan for a table."
+api: "POST https://revor.ai/api/v2/websets/{websetId}/smart-outreach/stop"
+authMethod: "bearer"
+playground: "simple"
+keywords:
+  - "Revor AI"
+  - "API v2"
+  - "Stop outreach"
+---
+
+Stop a smart outreach plan. Already submitted external actions are not recalled.
+
+## Overview
+
+| | |
+| --- | --- |
+| Method | `POST` |
+| Path | `/api/v2/websets/{websetId}/smart-outreach/stop` |
+| Permission | `outreach.plans:write` |
+| Idempotency | Required via `Idempotency-Key` header |
+| Returns | Stopped plans, revoked count, and in-flight count |
+
+## Path parameters
+
+<ParamField path="websetId" type="string" required>
+  Table UUID.
+</ParamField>
+
+## Request body
+
+Stop accepts an empty object `{}` or a `reason` string.
+
+```json Request body
+{
+  "reason": "Stopping test sequence"
+}
+```
+
+## Response
+
+The response includes:
+
+- `stopped_plans`
+- `revoked_count`
+- `in_flight_count`
+
+Already submitted external actions are not recalled. Stopping retains mappings and historical drafts; their presence does not imply an active sending schedule.
+
+```bash cURL
+curl -X POST "https://revor.ai/api/v2/websets/{websetId}/smart-outreach/stop" \
+  -H "Authorization: Bearer sk-revor-REPLACE_ME" \
+  -H "Idempotency-Key: outreach-stop-001" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "reason": "Stopping test sequence"
+  }'
+```

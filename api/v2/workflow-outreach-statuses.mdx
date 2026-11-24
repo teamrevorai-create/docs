@@ -1,0 +1,58 @@
+---
+title: "Batch outreach statuses"
+description: "Get per-item dispatch status for a batch of outreach targets."
+api: "POST https://revor.ai/api/v2/websets/{websetId}/smart-outreach/statuses"
+authMethod: "bearer"
+playground: "simple"
+keywords:
+  - "Revor AI"
+  - "API v2"
+  - "Batch outreach statuses"
+---
+
+Get dispatch status for a batch of outreach items and channels.
+
+## Overview
+
+| | |
+| --- | --- |
+| Method | `POST` |
+| Path | `/api/v2/websets/{websetId}/smart-outreach/statuses` |
+| Permission | `outreach.plans:read` |
+| Returns | Per-item dispatch status |
+
+## Path parameters
+
+<ParamField path="websetId" type="string" required>
+  Table UUID.
+</ParamField>
+
+## Request body
+
+<ParamField body="item_ids" type="string[]" required>
+  Array of row UUIDs. Maximum 100 rows.
+</ParamField>
+
+<ParamField body="channels" type="string[]" required>
+  List of channels, for example `["email", "linkedin"]`.
+</ParamField>
+
+```json Request body
+{
+  "item_ids": ["row-uuid"],
+  "channels": ["email", "linkedin"]
+}
+```
+
+- `item_ids` maximum 100 rows
+- Returns per-item dispatch status
+
+```bash cURL
+curl -X POST "https://revor.ai/api/v2/websets/{websetId}/smart-outreach/statuses" \
+  -H "Authorization: Bearer sk-revor-REPLACE_ME" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "item_ids": ["row-uuid"],
+    "channels": ["email", "linkedin"]
+  }'
+```

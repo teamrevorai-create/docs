@@ -1,0 +1,91 @@
+---
+title: "列出智能体"
+description: "分页读取当前用户的智能体摘要。"
+api: "GET https://revor.ai/api/v2/agents"
+authMethod: "bearer"
+playground: "simple"
+keywords:
+  - "Revor AI"
+  - "API v2"
+  - "列出智能体"
+---
+
+分页读取当前用户的智能体摘要，返回智能体列表、总数及分页信息。
+
+## 接口概览
+
+|  |  |
+| --- | --- |
+| 方法 | `GET` |
+| 路径 | `/api/v2/agents` |
+| 权限 | `agents:read` |
+| 限流桶 | `read` |
+| 返回 | 分页列表，含 `items`、`total`、`page`、`limit` |
+
+## 查询参数
+
+<ParamField query="page" type="integer" default="1">
+  页码。
+</ParamField>
+
+<ParamField query="limit" type="integer" default="20">
+  每页数量，最大 `100`。
+</ParamField>
+
+<ParamField query="status" type="string">
+  按状态过滤，可选值: `draft`、`active`、`paused`、`archived`。
+</ParamField>
+
+<ParamField query="default_mode" type="string">
+  按默认模式过滤，可选值: `icebreaker` 或 `autoreply`。
+</ParamField>
+
+<ParamField query="keyword" type="string">
+  按智能体名称搜索。
+</ParamField>
+
+未知参数返回 `400`。
+
+```bash cURL
+curl -X GET "https://revor.ai/api/v2/agents?page=1&limit=20&status=active" \
+  -H "Authorization: Bearer sk-revor-REPLACE_ME"
+```
+
+## 响应
+
+```json 200
+{
+  "ok": true,
+  "request_id": "req_xxx",
+  "items": [
+    {
+      "id": "agent-uuid",
+      "name": "客户开发助手",
+      "description": "面向制造业的主动触达智能体",
+      "status": "active",
+      "default_mode": "icebreaker",
+      "generation_contract_version": 2,
+      "updated_at": "2026-11-13T04:44:50.096+00:00"
+    }
+  ],
+  "total": 1,
+  "page": 1,
+  "limit": 20
+}
+```
+
+<Note>
+  摘要返回: `id`、`name`、`description`、`status`、`default_mode`、`generation_contract_version`、`updated_at`。
+</Note>
+
+## 错误码
+
+| HTTP | 错误码 | 含义 |
+| --- | --- | --- |
+| `400` | `agent_input_invalid` | 参数错误（如未知参数） |
+| `403` | `permission_denied` | 缺少 `agents:read` 权限 |
+
+## 行为说明
+
+- 资源只限 API Key 所属用户。
+- 默认用户 Key 随滚动 preset 获得这些权限；只读 preset 仅获得 `agents:read`，显式拒绝权限继续生效。

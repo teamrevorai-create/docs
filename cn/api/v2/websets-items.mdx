@@ -1,0 +1,146 @@
+---
+title: "分页读取潜客结果"
+description: "导入表格同样支持分页。导入表格使用默认 match=qualified 或 verified 读取全部导入行，full / partial / rejected 返回空页。导入行未经过 ICP 评分，返回 match.status=not_applicable、match.score=null，检查计数为 null、条件列表为空；下文匹配分档和 SSE 说明仅适用于挖掘名单。standard / full 保留现有 entity 联系邮箱字段，本接口不返回完整联系人集合。"
+keywords: ["Revor AI", "API v2", "分页读取潜客结果"]
+api: "GET https://revor.ai/api/v2/prospect-lists/{webset_id}/prospects"
+authMethod: "bearer"
+playground: "simple"
+---
+
+读取 Webset 的权威 Items 快照。名单运行中也可读取，此时 `provisional=true` 表示条目仍可能更新或移除。需要 `websets:read` 权限。
+
+<Note>
+  原入口 `GET /api/v2/websets/{webset_id}/items` 继续支持，参数、返回字段和权限均保持一致。两个 URL 执行同一操作。
+</Note>
+
+## 概览
+
+|  |  |
+| --- | --- |
+| 方法 | `GET` |
+| 路径 | `https://revor.ai/api/v2/prospect-lists/\{webset_id\}/prospects` |
+| 权限 | `websets:read` |
+
+## Query 参数
+
+<ParamField query="match" default="qualified" type="string">
+  `qualified`、`full`、`partial`、`rejected`、`verified` 之一。
+</ParamField>
+
+<ParamField query="detail" default="compact" type="string">
+  `compact`、`standard` 或 `full` 之一。
+</ParamField>
+
+<ParamField query="limit" default="10" type="number">
+  `compact` 最大 50，`standard` 最大 25，`full` 最大 10。
+</ParamField>
+
+<ParamField query="cursor" type="string">
+  上一页的 `next_cursor`。
+</ParamField>
+
+### 匹配分档行为
+
+对于挖掘名单，`qualified` 返回 `full + partial`；`verified` 返回 `full + partial + rejected`。挖掘结果的 `match.status` 为 `full`、`partial` 或 `rejected`。
+
+当前 weighted scoring 模式下，顶层 `match.score` 是 `0–100` 的综合加权分：`80–100` 为 `full`，`40–79` 为 `partial`，`0–39` 为 `rejected`。逐项条件的 confidence 或 score 是单项判断，不应和顶层综合分混用。
+
+### 导入表格与挖掘名单的区别
+
+导入表格同样支持分页。导入表格使用默认 `match=qualified` 或 `verified` 读取全部导入行，`full` / `partial` / `rejected` 返回空页。导入行未经过 ICP 评分，返回 `match.status=not_applicable`、`match.score=null`，检查计数为 `null`、条件列表为空；下文匹配分档和 SSE 说明仅适用于挖掘名单。
+
+## 详细程度
+
+| 档位 | 包含内容 |
+| --- | --- |
+| `compact` | 名称、网站或主页、行业或职位、匹配状态和分数。 |
+| `standard` | 增加完整 entity、检查计数和条件摘要。 |
+| `full` | 增加每项条件的 reasoning、confidence 和参考 URL。 |
+
+## 请求示例
+
+```bash cURL
+curl -H "Authorization: Bearer sk-revor-REPLACE_ME" \
+  "https://revor.ai/api/v2/prospect-lists/WEBSET_ID/prospects?match=qualified&detail=compact&limit=50"
+```
+
+## 响应
+
+```json 200
+{
+  "ok": true,
+  "request_id": "req_xxx",
+  "items": [
+    {
+      "id": "item-uuid",
+      "target_kind": "company",
+      "entity": {
+        "name": "Example Equipment",
+        "website": "https://example.com",
+        "industry": "Construction Equipment"
+      },
+      "match": {
+        "status": "full",
+        "score": 92
+      },
+      "provisional": true
+    }
+  ],
+  "detail": "compact",
+  "next_cursor": null,
+  "has_more": false,
+  "webset_status": "verifying",
+  "items_revision": 18,
+  "stream_cursor": 289
+}
+```
+
+### 响应字段
+
+<ResponseField name="ok" type="boolean">
+  请求是否成功。
+</ResponseField>
+
+<ResponseField name="request_id" type="string">
+  请求标识。
+</ResponseField>
+
+<ResponseField name="items" type="object[]">
+  当前页的条目。
+</ResponseField>
+
+<ResponseField name="detail" type="string">
+  请求的详细度档位。
+</ResponseField>
+
+<ResponseField name="next_cursor" type="string | null">
+  下一页游标；未返回游标时为 `null`。
+</ResponseField>
+
+<ResponseField name="has_more" type="boolean">
+  是否还有下一页。
+</ResponseField>
+
+<ResponseField name="webset_status" type="string">
+  Webset 当前状态。
+</ResponseField>
+
+<ResponseField name="items_revision" type="number">
+  Items revision 编号，用于 SSE checkpoint。
+</ResponseField>
+
+<ResponseField name="stream_cursor" type="number">
+  本请求发生前的 SSE 游标；与 `items_revision` 一起用于建立实时流。
+</ResponseField>
+
+## 分页与 SSE checkpoint
+
+多页读取时保存**第一页**的 `stream_cursor + items_revision`，沿 `next_cursor` 读完其余页面，再用第一页 checkpoint 连接 SSE。分页期间发生的更新会从该位置重放；客户端必须以 Item `id` 为唯一键合并重复项。
+
+<Note>
+  `next_cursor` 是不透明 REST 分页游标；`stream_cursor` 是数字 SSE 事件游标，不能混用。
+</Note>
+
+<Warning>
+  `entity.name` 是展示名称，不保证是唯一法人名称。母公司、地区子公司或同品牌不同法人可能同名；始终使用 Item `id` 作为唯一键，并结合官网判断企业实体。
+</Warning>

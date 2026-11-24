@@ -1,0 +1,85 @@
+---
+title: "Get contacts"
+description: "Read contacts for a table item by field key."
+api: "GET https://revor.ai/api/v2/websets/{websetId}/items/{itemId}/contacts/{fieldKey}"
+authMethod: "bearer"
+playground: "simple"
+keywords:
+  - "Revor AI"
+  - "API v2"
+  - "Get contacts"
+---
+
+Read the contacts associated with a specific table item and field key.
+
+## Overview
+
+| | |
+| --- | --- |
+| Method | `GET` |
+| Path | `/api/v2/websets/{websetId}/items/{itemId}/contacts/{fieldKey}` |
+| Permission | `prospects.contacts:read` |
+| Returns | Contact collection and channel list |
+
+## Path parameters
+
+<ParamField path="websetId" type="string" required>
+  Table UUID.
+</ParamField>
+
+<ParamField path="itemId" type="string" required>
+  Row UUID.
+</ParamField>
+
+<ParamField path="fieldKey" type="string" required>
+  Contact field key.
+</ParamField>
+
+### Supported field keys
+
+- `imported_contacts`
+- `snovio_key_contacts`
+- `company_social_contacts`
+- Custom contact column keys (discover with `/research/columns`)
+
+## Contact field formats by source
+
+<AccordionGroup>
+  <Accordion title="Snovio contacts">
+    - `email`
+    - `firstName`
+    - `lastName`
+    - `fullName`
+    - `position`
+    - `linkedin`
+    - `status`
+  </Accordion>
+
+  <Accordion title="Other sources">
+    - `id`
+    - `contact_key`
+    - `contact_kind`
+    - `full_name`
+    - `title`
+    - `company_name`
+
+    Channels support strings or arrays of strings.
+  </Accordion>
+
+  <Accordion title="Channel support by source">
+    - **imported_contacts** - `email`, `whatsapp`, `phone`, `linkedin`
+    - **website contacts** - `email`, `whatsapp`, `phone`
+    - **custom contact columns** - `email`, `whatsapp`, `phone`, `linkedin`, `facebook`, `instagram`, `custom`
+  </Accordion>
+</AccordionGroup>
+
+Unsupported fields are rejected. Read responses contain `contacts` and `channels` linked by `contact_id`.
+
+<Tip>
+  Saving contacts triggers asynchronous target pool synchronization. The sync completion time is not the same as the API response time.
+</Tip>
+
+```bash cURL
+curl -X GET "https://revor.ai/api/v2/websets/{websetId}/items/{itemId}/contacts/snovio_key_contacts" \
+  -H "Authorization: Bearer sk-revor-REPLACE_ME"
+```

@@ -1,0 +1,42 @@
+---
+title: "读取待发送草稿"
+description: "获取指定目标的待发送触达草稿。"
+api: "GET https://revor.ai/api/v2/websets/{websetId}/smart-outreach/drafts/{targetId}"
+authMethod: "bearer"
+playground: "simple"
+keywords:
+  - "Revor AI"
+  - "API v2"
+  - "读取待发送草稿"
+---
+
+获取指定目标的待发送触达草稿。先查 `editable` 和 `editable_reason`，发送中/已发送的草稿不可编辑。
+
+## 接口概览
+
+|  |  |
+| --- | --- |
+| 方法 | `GET` |
+| 路径 | `/api/v2/websets/{websetId}/smart-outreach/drafts/{targetId}` |
+| 权限 | `outreach.plans:read` |
+
+## 路径参数
+
+<ParamField path="websetId" type="string" required>
+  表格 UUID。
+</ParamField>
+
+<ParamField path="targetId" type="string" required>
+  目标 ID，由 [`GET /smart-outreach/items/{itemId}`](/cn/api/v2/workflow-outreach-item) 返回。
+</ParamField>
+
+## 请求示例
+
+```bash cURL
+curl "https://revor.ai/api/v2/websets/webset-uuid/smart-outreach/drafts/target-uuid" \
+  -H "Authorization: Bearer sk-revor-REPLACE_ME"
+```
+
+## 响应
+
+返回草稿内容，包含 `subject`、`body`、`schedule` 和 `editable` 等字段。发送中/已发送的草稿不可编辑。

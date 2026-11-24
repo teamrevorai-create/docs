@@ -1,0 +1,43 @@
+---
+title: "读取触达配置与归属"
+description: "获取指定表格的当前触达配置、归属智能体和版本号。"
+api: "GET https://revor.ai/api/v2/websets/{websetId}/smart-outreach"
+authMethod: "bearer"
+playground: "simple"
+keywords:
+  - "Revor AI"
+  - "API v2"
+  - "读取触达配置与归属"
+---
+
+读取指定表格的当前触达配置、归属智能体 ID 和归属版本号。启动触达前必须先调用此接口获取归属信息。
+
+## 接口概览
+
+|  |  |
+| --- | --- |
+| 方法 | `GET` |
+| 路径 | `/api/v2/websets/{websetId}/smart-outreach` |
+| 权限 | `outreach.plans:read` |
+
+## 路径参数
+
+<ParamField path="websetId" type="string" required>
+  表格 UUID。
+</ParamField>
+
+## 请求示例
+
+```bash cURL
+curl "https://revor.ai/api/v2/websets/webset-uuid/smart-outreach" \
+  -H "Authorization: Bearer sk-revor-REPLACE_ME"
+```
+
+## 响应
+
+返回当前触达配置与归属信息：
+
+- `owner_agent_id` - 归属智能体 UUID，无归属时为 `null`
+- `ownership_version` - 归属版本号
+
+启动触达时，这两个值必须作为 `expected_owner_agent_id` 和 `expected_ownership_version` 传入启动接口。

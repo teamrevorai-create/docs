@@ -1,0 +1,103 @@
+---
+title: "Create a prospect list"
+description: "The existing POST /api/v2/websets endpoint remains supported with the same parameters, response fields, and permissions. Both URLs execute the same operation."
+keywords: ["Revor AI", "API v2", "Create a prospect list"]
+api: "POST https://revor.ai/api/v2/prospect-lists"
+authMethod: "bearer"
+playground: "simple"
+---
+
+Creates a company or person prospect list from natural-language criteria. The endpoint returns HTTP `202`; criteria generation, search, and verification continue asynchronously.
+
+## At a glance
+
+|  |  |
+| --- | --- |
+| Method | `POST` |
+| Path | `/api/v2/prospect-lists` |
+| Permission | `websets:write` |
+| Idempotency | Send `Idempotency-Key` when requests may be retried |
+| Returns | `202` with `webset` and `preparation_job` |
+
+The existing `POST /api/v2/websets` endpoint remains supported with the same parameters, response fields, and permissions. Both URLs execute the same operation.
+
+## Request body
+
+<ParamField body="query" type="string" required>
+  Natural-language criteria, up to 2,000 characters.
+</ParamField>
+
+<ParamField body="title" type="string">
+  List name, up to 200 characters.
+</ParamField>
+
+<ParamField body="count" default="25" type="integer">
+  `25`, `100`, `500`, or `1000`; defaults to `25` and is plan-limited.
+</ParamField>
+
+<ParamField body="target_kind" default="company" type="string">
+  `company` or `person`; defaults to `company`.
+</ParamField>
+
+<ParamField body="locale" default="en" type="string">
+  `en` or `zh`; defaults to `en`.
+</ParamField>
+
+```bash cURL
+curl -X POST "https://revor.ai/api/v2/prospect-lists" \
+  -H "Authorization: Bearer sk-revor-REPLACE_ME" \
+  -H "Idempotency-Key: webset-create-001" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "Excavator manufacturers, dealers, and rental providers in North America",
+    "title": "North American excavator companies",
+    "count": 25,
+    "target_kind": "company",
+    "locale": "en"
+  }'
+```
+
+```json Request body
+{
+  "query": "Excavator manufacturers, dealers, and rental providers in North America",
+  "title": "North American excavator companies",
+  "count": 25,
+  "target_kind": "company",
+  "locale": "en"
+}
+```
+
+## Response
+
+HTTP `202` accepted:
+
+```json 202
+{
+  "ok": true,
+  "request_id": "req_xxx",
+  "webset": {
+    "id": "webset-uuid",
+    "status": "generating_criteria",
+    "count": 25,
+    "target_kind": "company"
+  },
+  "preparation_job": {
+    "id": "job-uuid",
+    "status": "queued"
+  }
+}
+```
+
+<Warning>
+  Save `webset.id`. HTTP `202` and `preparation_job.status=queued` mean the request was accepted, not that discovery is complete. Fetch an [Items snapshot](/api/v2/websets-items), then open [Items SSE](/api/v2/websets-items-stream).
+</Warning>
+
+## Errors
+
+| HTTP | Code | Description |
+| --- | --- | --- |
+| `400` | `webset_query_required` / `webset_query_too_long` | The query is missing or too long. |
+| `400` | `webset_count_invalid` | The requested count is not allowed. |
+| `400` | `webset_target_kind_unsupported` | The target kind is invalid. |
+| `403` | `webset_count_not_available_for_tier` | The current plan does not allow this count. |
+| `409` | `idempotency_conflict` | The same idempotency key was used for another request. |

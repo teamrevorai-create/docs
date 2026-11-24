@@ -1,0 +1,68 @@
+---
+title: "查询调研进度与结果"
+description: "获取指定调研任务的进度或当前有效结果。"
+api: "GET https://revor.ai/api/v2/websets/{websetId}/research/runs/{runId}"
+authMethod: "bearer"
+playground: "simple"
+keywords:
+  - "Revor AI"
+  - "API v2"
+  - "查询调研进度与结果"
+---
+
+查询指定调研任务的状态、进度或当前有效结果。支持 `progress` 和 `results` 两种视图。
+
+## 接口概览
+
+|  |  |
+| --- | --- |
+| 方法 | `GET` |
+| 路径 | `/api/v2/websets/{websetId}/research/runs/{runId}` |
+| 权限 | `websets.research:read` |
+
+## 路径参数
+
+<ParamField path="websetId" type="string" required>
+  表格 UUID。
+</ParamField>
+
+<ParamField path="runId" type="string" required>
+  调研 run ID。
+</ParamField>
+
+## Query 参数
+
+<ParamField query="page" type="number">
+  页码，默认 1。
+</ParamField>
+
+<ParamField query="limit" type="number">
+  每页数量，默认 50，最大 100。
+</ParamField>
+
+<ParamField query="view" type="string">
+  `progress` 或 `results`，默认 `progress`。
+</ParamField>
+
+## 请求示例
+
+```bash cURL
+curl "https://revor.ai/api/v2/websets/webset-uuid/research/runs/run-uuid?view=progress" \
+  -H "Authorization: Bearer sk-revor-REPLACE_ME"
+```
+
+## 响应
+
+返回调研进度或结果。`results` 视图返回该 run 所涉及行的**当前有效结果**，包含后续人工修改，不表示历史 provider 原始快照。
+
+```json 200
+{
+  "run": {
+    "id": "run-uuid",
+    "kind": "key_contacts",
+    "field_key": "snovio_key_contacts",
+    "reused": false,
+    "status": "running"
+  }
+}
+```

@@ -1,0 +1,126 @@
+---
+title: "潜在客户发现"
+description: "Revor AI 根据自然语言条件持续查找符合要求的企业或人物，并把结果保存为可分页、可实时订阅的潜客名单。"
+keywords:
+  - "Revor AI"
+  - "API v2"
+  - "潜在客户发现"
+---
+
+Revor AI 根据自然语言条件持续查找符合要求的企业或人物，并把结果保存为可分页、可实时订阅的潜客名单。新接入推荐使用 `/api/v2/prospect-lists`，现有 JSON 字段继续使用 `webset` 表示这份名单。
+
+## 兼容性
+
+<Note>
+  所有现有 `/api/v2/websets` 入口继续支持，新旧路径调用同一处理函数。
+</Note>
+
+| 原路径 | 推荐路径 |
+| --- | --- |
+| `/api/v2/websets` | `/api/v2/prospect-lists` |
+| `/api/v2/websets/{webset_id}` | `/api/v2/prospect-lists/{webset_id}` |
+| `/api/v2/websets/{webset_id}/strategy` | `/api/v2/prospect-lists/{webset_id}/search-plan` |
+| `/api/v2/websets/{webset_id}/items` | `/api/v2/prospect-lists/{webset_id}/prospects` |
+| `/api/v2/websets/{webset_id}/find-more` | `/api/v2/prospect-lists/{webset_id}/expand` |
+
+两个流式接口也同时保留对应的新旧路径。参数、`webset.id` 和 `webset_id` 等返回字段、权限、SSE 事件名及计费规则均保持一致。现有返回字段中的 URL 可能仍使用 `/api/v2/websets`，这些地址继续有效。通过任一路径重试同一操作时，应保持相同 API Key、请求体和 `Idempotency-Key`；两个 URL 共享原有幂等记录。
+
+## 推荐流程
+
+### 创建新名单
+
+<Steps>
+  <Step title="创建名单">
+    调用 [`POST /prospect-lists`](/cn/api/v2/websets-create) 创建名单，保存 `webset.id`。
+  </Step>
+  <Step title="获取权威快照">
+    调用 [`GET /prospect-lists/{id}/prospects`](/cn/api/v2/websets-items) 获取权威快照。
+  </Step>
+  <Step title="连接实时流">
+    使用快照的 `stream_cursor + items_revision` 连接 [Items SSE](/cn/api/v2/websets-items-stream)。
+  </Step>
+  <Step title="应用增量更新">
+    按 `items.changed` 更新本地结果，收到 `complete` 后结束。
+  </Step>
+  <Step title="处理重置事件">
+    收到 `reset` 时重新读取快照并用新 checkpoint 建立连接。
+  </Step>
+</Steps>
+
+### 扩展更多结果
+
+<Steps>
+  <Step title="保存 checkpoint">
+    读完当前 Items 快照并保存第一页返回的 checkpoint。
+  </Step>
+  <Step title="启动扩展任务">
+    调用 [`POST /prospect-lists/{id}/expand`](/cn/api/v2/websets-find-more)，保存 `item.id`。
+  </Step>
+  <Step title="订阅扩展流">
+    使用该 `job_id` 和旧 checkpoint 连接 [Find More SSE](/cn/api/v2/websets-find-more-stream)。
+  </Step>
+  <Step title="应用增量">
+    应用增量，收到 `complete` 后结束。
+  </Step>
+</Steps>
+
+<Info>
+  先取快照、再建流可以覆盖两个请求之间发生的变化。SSE 不传 checkpoint 时只接收连接之后的变化，不返回完整快照。
+</Info>
+
+## 接口
+
+<CardGroup cols={2}>
+  <Card title="POST /api/v2/prospect-lists" icon="plus" href="/cn/api/v2/websets-create">
+    创建企业或人物潜客名单
+  </Card>
+
+  <Card title="GET /api/v2/prospect-lists" icon="list" href="/cn/api/v2/websets-list">
+    分页查询当前用户的名单
+  </Card>
+
+  <Card title="GET /api/v2/prospect-lists/{id}" icon="search" href="/cn/api/v2/websets-detail">
+    查询名单状态、条件和进度
+  </Card>
+
+  <Card title="GET /api/v2/prospect-lists/{id}/search-plan" icon="globe" href="/cn/api/v2/websets-strategy">
+    读取条件和搜索策略
+  </Card>
+
+  <Card title="GET /api/v2/prospect-lists/{id}/prospects" icon="list" href="/cn/api/v2/websets-items">
+    分页读取权威结果快照
+  </Card>
+
+  <Card title="GET /api/v2/prospect-lists/{id}/prospects/stream" icon="radio" href="/cn/api/v2/websets-items-stream">
+    实时读取状态、策略和 Item 增量
+  </Card>
+
+  <Card title="POST /api/v2/prospect-lists/{id}/expand" icon="plus" href="/cn/api/v2/websets-find-more">
+    在已有名单上继续挖掘
+  </Card>
+
+  <Card title="GET /api/v2/prospect-lists/{id}/expand/stream" icon="radio" href="/cn/api/v2/websets-find-more-stream">
+    订阅指定 Find More 任务
+  </Card>
+</CardGroup>
+
+## 权限
+
+读取接口和 SSE 需要 `websets:read`；创建和 Find More 需要 `websets:write`。资源按 API Key 所属用户隔离；访问其他用户的 ID 返回 `404 webset_not_found`。
+
+## 状态
+
+```text 状态值
+draft | generating_criteria | ready | queued | searching | verifying |
+completed | failed | cancelled
+```
+
+<Warning>
+  `preparation_job` 只表示创建或 Find More 是否成功启动。Webset 状态才表示潜客挖掘是否完成。
+</Warning>
+
+## 两种游标
+
+- REST 响应的 `next_cursor` 是不透明分页游标，只能原样用于下一页。
+- `stream_cursor` 是数字 SSE 事件游标，必须和 `items_revision` 成对保存。
+- 两种 cursor 不能混用。

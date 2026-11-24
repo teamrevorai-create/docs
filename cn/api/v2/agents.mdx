@@ -1,0 +1,163 @@
+---
+title: "智能体配置与渠道绑定"
+sidebarTitle: "概览"
+description: "接口复用控制台的配置保存、账号归属校验、版本保护及关联计划同步。官网创建使用独立后台编排；对应 MCP 管理工具复用这些公共服务。"
+keywords:
+  - "Revor AI"
+  - "API v2"
+  - "智能体配置与渠道绑定"
+---
+
+接口复用控制台的配置保存、账号归属校验、版本保护及关联计划同步。官网创建使用独立后台编排；对应 [MCP 管理工具](/mcp/cn/tools) 复用这些公共服务。
+
+## 接口概览
+
+| 方法 | 路径 | 权限 | 说明 |
+| --- | --- | --- | --- |
+| `GET` | `/api/v2/agents` | `agents:read` | [列出智能体](/cn/api/v2/agents-list) |
+| `GET` | `/api/v2/agents/{agentId}` | `agents:read` | [读取智能体详情](/cn/api/v2/agents-get) |
+| `PATCH` | `/api/v2/agents/{agentId}` | `agents:write` | [更新智能体配置](/cn/api/v2/agents-update) |
+| `POST` | `/api/v2/agents/preview` | `agents:write` | [预览智能体消息](/cn/api/v2/agents-preview) |
+| `POST` | `/api/v2/agents/from-website` | `agents:write` | [从官网创建智能体](/cn/api/v2/agents-from-website) |
+| `PUT` | `/api/v2/agents/{agentId}/channel-bindings/{channel}` | `agents.bindings:write` | [绑定渠道账号](/cn/api/v2/agents-bind-channel) |
+| `DELETE` | `/api/v2/agents/{agentId}/channel-bindings/{channel}` | `agents.bindings:write` | [解绑渠道账号](/cn/api/v2/agents-unbind-channel) |
+| `GET` | `/api/v2/agents/{agentId}/sequence` | `agents:read` | [读取多轮触达配置](/cn/api/v2/agents-sequence-get) |
+| `PUT` | `/api/v2/agents/{agentId}/sequence` | `agents:write` | [保存多轮触达配置](/cn/api/v2/agents-sequence-update) |
+| `POST` | `/api/v2/agents/{agentId}/sequence/generate` | `agents:write` | [生成多轮策略内容](/cn/api/v2/agents-sequence-generate) |
+| `POST` | `/api/v2/agents/{agentId}/sequence/preview` | `agents:write` | [预览多轮消息](/cn/api/v2/agents-sequence-preview) |
+
+<Note>
+  所有请求使用 `Authorization: Bearer <API_KEY>`。资源只限 API Key 所属用户。默认用户 Key 随滚动 preset 获得这些权限；只读 preset 仅获得 `agents:read`，显式拒绝权限继续生效。当前套餐最低 Free。
+</Note>
+
+读取使用 `read` 限流桶，编辑和绑定使用 `outreach_write` 桶。
+
+<CardGroup cols={2}>
+  <Card title="列出智能体" icon="list" href="/cn/api/v2/agents-list">
+    分页读取智能体摘要，支持按状态、模式和关键词过滤。
+  </Card>
+
+  <Card title="读取智能体详情" icon="eye" href="/cn/api/v2/agents-get">
+    读取单个智能体的完整配置、可编辑字段及渠道绑定关系。
+  </Card>
+
+  <Card title="更新智能体配置" icon="pencil" href="/cn/api/v2/agents-update">
+    局部编辑智能体配置，支持版本保护防止并发覆盖。
+  </Card>
+
+  <Card title="预览智能体消息" icon="play" href="/cn/api/v2/agents-preview">
+    基于智能体配置生成单条预览消息，支持临时配置覆盖。
+  </Card>
+
+  <Card title="从官网创建智能体" icon="globe" href="/cn/api/v2/agents-from-website">
+    通过公司网站创建草稿智能体，自动编排基础配置。
+  </Card>
+
+  <Card title="绑定渠道账号" icon="link" href="/cn/api/v2/agents-bind-channel">
+    为智能体绑定或换绑渠道账号（email、linkedin、whatsapp）。
+  </Card>
+
+  <Card title="解绑渠道账号" icon="unlink" href="/cn/api/v2/agents-unbind-channel">
+    解除智能体的渠道账号绑定。
+  </Card>
+
+  <Card title="读取多轮触达配置" icon="book-open" href="/cn/api/v2/agents-sequence-get">
+    读取智能体的多轮触达配置与独立版本。
+  </Card>
+
+  <Card title="保存多轮触达配置" icon="save" href="/cn/api/v2/agents-sequence-update">
+    保存或关闭多轮触达配置，支持版本保护。
+  </Card>
+
+  <Card title="生成多轮策略内容" icon="wand" href="/cn/api/v2/agents-sequence-generate">
+    为多轮触达的某轮生成策略内容草稿。
+  </Card>
+
+  <Card title="预览多轮消息" icon="play-circle" href="/cn/api/v2/agents-sequence-preview">
+    按轮次预览多轮触达消息内容，支持研究预览。
+  </Card>
+</CardGroup>
+
+---
+
+## 共享概念
+
+### 渠道可用值
+
+`channel` 参数仅允许以下值:
+
+- `email`
+- `linkedin`
+- `whatsapp`
+
+### 配置模式
+
+智能体 `default_mode` 仅支持:
+
+- `icebreaker`（主动触达）
+- `autoreply`（客服自动回复）
+
+### 内容生成模式
+
+- `ai_personalized`（AI 个性化生成）
+- `fixed_template`（固定模板）
+
+---
+
+## 计费
+
+- 普通消息生成消费一次普通智能触达额度。
+- 调研生成消费一次研究触达额度，已包含调研和写信，不叠扣普通额度。
+- Meta WhatsApp 模板使用原模板结果，消费普通额度。
+- 明确失败退回预扣额度。
+- 账务不确定时保留批次待恢复，不重复生成或盲目退款。
+
+---
+
+## MCP 管理工具
+
+对应 [MCP 管理工具](/mcp/cn/tools) 复用这些公共服务。
+
+多轮触达相关的 MCP 工具:
+
+| 工具 | 用途 |
+| --- | --- |
+| `revor_get_agent_sequence` | 读取多轮配置 |
+| `revor_update_agent_sequence` | 保存多轮配置 |
+| `revor_generate_agent_sequence_content` | 生成某轮策略内容 |
+| `revor_preview_agent_sequence` | 逐轮消息预览 |
+| `revor_preview_agent_message` | 独立消息预览 |
+
+---
+
+## 错误与重试
+
+### 公共错误码
+
+| HTTP | 错误码 | 含义 |
+| --- | --- | --- |
+| `400` | `agent_input_invalid` | 公共参数不符合契约 |
+| `400` | `agent_configuration_invalid` | 违反现有智能体业务校验 |
+| `403` | `permission_denied` | 缺少对应权限 |
+| `404` | `agent_not_found` | 智能体不存在、已删除或不属于当前用户 |
+| `409` | `agent_config_conflict` | 版本过期或并发修改 |
+| `409` | `agent_account_already_bound` | 账号占用冲突 |
+| `409` | `agent_knowledge_base_not_found` | 关联知识库不可用 |
+| `500` | `agent_operation_failed` | 操作失败，需读取当前配置核对是否已保存 |
+
+### 多轮特有错误码
+
+| HTTP | 错误码 | 含义 |
+| --- | --- | --- |
+| `404` | `agent_sequence_unavailable` | 多轮触达未开放或门禁未启用 |
+| `409` | `agent_sequence_config_conflict` | 多轮配置版本过期或并发修改 |
+
+### 重试规则
+
+- 基础配置读取、编辑与绑定同步完成，不返回 job。
+- 官网创建、策略生成和消息预览返回异步 job。
+- 多轮配置保存同步返回版本，关联计划由 worker 同步。
+
+<Warning>
+  基础保存后的关联副作用并非同一数据库事务，`500` 不保证配置未修改；先 GET 核对，禁止盲目重放。重试旧版本基础配置写入将返回冲突，不把它伪装为成功幂等响应。
+</Warning>

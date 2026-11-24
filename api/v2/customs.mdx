@@ -1,0 +1,247 @@
+---
+title: "Customs trade data API"
+description: "The Customs API provides company discovery, company-name candidates, counterparties, product categories, trends, country distribution, and complete trade reports. Every endpoint is an asynchronous POST. Idempotency-Key is optional; send and reuse it when safe retries are needed."
+keywords: ["Revor AI", "API v2", "Customs trade data API"]
+sidebarTitle: "Overview"
+---
+
+The Customs API provides company discovery, company-name candidates, counterparties, product categories, trends, country distribution, and complete trade reports. Every endpoint is an asynchronous `POST`. `Idempotency-Key` is optional; send and reuse it when safe retries are needed.
+
+Two independent dimensions control a query:
+
+- `company_role` is the target company's role in the trade: `importer` or `exporter`.
+- `catalog` is the record catalog to query: `imports` or `exports`.
+
+They can be combined independently. Most requests use the first two common combinations. Cross-combinations are useful when looking up a company from the opposite side's record catalog.
+
+| Scenario | `company_role` | `catalog` |
+| --- | --- | --- |
+| Get an importer's import records | `importer` | `imports` |
+| Get an exporter's export records | `exporter` | `exports` |
+| Find an exporter and its buyers from destination-country import records | `exporter` | `imports` |
+| Find an importer and its suppliers from origin-country export records | `importer` | `exports` |
+
+`company_role` answers "what role does the target company play?" while `catalog` answers "which side's record catalog should be queried?" They are not duplicate fields.
+
+## Endpoints
+
+| Method | Path | Description |
+| --- | --- | --- |
+| `POST` | `/api/v2/customs/company-candidates` | Find exact name strings that have trade records. |
+| `POST` | `/api/v2/customs/companies/search` | Discover companies by product, country, and date. |
+
+<CardGroup cols={2}>
+  <Card title="Find customs company candidates" icon="magnifying-glass" href="/api/v2/customs-company-candidates">
+    Find exact name strings that have trade records in a date range.
+  </Card>
+
+  <Card title="Discover companies by trade" icon="ship" href="/api/v2/customs-companies-search">
+    Find importers or exporters from product, country, and date criteria.
+  </Card>
+</CardGroup>
+
+## Query endpoints
+
+| Path | Result |
+| --- | --- |
+| `/api/v2/customs/counterparties` | Major trading counterparties. |
+| `/api/v2/customs/categories` | Major HS product categories. |
+| `/api/v2/customs/trends` | Trends aggregated by month, quarter, or year. |
+| `/api/v2/customs/countries` | Origin- or destination-country distribution. |
+| `/api/v2/customs/trade-reports` | Runs all four sections in one job and permits partial section failures. |
+
+These endpoints share one request format:
+
+```bash cURL
+curl -X POST "https://revor.ai/api/v2/customs/trade-reports" \
+  -H "Authorization: Bearer sk-revor-REPLACE_ME" \
+  -H "Content-Type: application/json" \
+  -H "Prefer: wait=20" \
+  -d '{
+    "company_name": "BANBROS COMMERCIAL INC",
+    "company_role": "importer",
+    "catalog": "imports",
+    "start_date": "2025-08-01",
+    "end_date": "2026-07-31",
+    "page": 1,
+    "page_size": 20,
+    "period_unit": "months",
+    "filters": {
+      "hs_code": "8429",
+      "product_description": "excavator",
+      "origin_country_code": "CHN",
+      "destination_country_code": "USA"
+    }
+  }'
+```
+
+## Shared request fields
+
+<ParamField body="company_name" type="string" required>
+  2-300 characters; use an exact name confirmed by the candidates endpoint.
+</ParamField>
+
+<ParamField body="company_role" type="string" required>
+  `importer` or `exporter`.
+</ParamField>
+
+<ParamField body="catalog" type="string">
+  `imports` or `exports`; independent of `company_role`. Defaults to the common catalog for the role.
+</ParamField>
+
+<ParamField body="start_date" type="date" required>
+  `YYYY-MM-DD`.
+</ParamField>
+
+<ParamField body="end_date" type="date" required>
+  `YYYY-MM-DD`; cannot precede `start_date`.
+</ParamField>
+
+<ParamField body="page" default="1" type="integer">
+  1-1000; default 1.
+</ParamField>
+
+<ParamField body="page_size" default="20" type="integer">
+  1-20; default 20. Out-of-range values are normalized to the boundary.
+</ParamField>
+
+<ParamField body="period_unit" default="months" type="string">
+  `months`, `quarters`, or `years`; default `months`.
+</ParamField>
+
+<ParamField body="filters.hs_code" type="string">
+  One 2, 4, 6, 8, or 10 digit HS Code; lists and ranges are unsupported.
+</ParamField>
+
+<ParamField body="filters.product_description" type="string">
+  Product-description filter.
+</ParamField>
+
+<ParamField body="filters.origin_country_code" type="string">
+  ISO 3166-1 alpha-3 origin code, such as `CHN`.
+</ParamField>
+
+<ParamField body="filters.destination_country_code" type="string">
+  ISO 3166-1 alpha-3 destination code, such as `USA`.
+</ParamField>
+
+<Note>
+  The maximum query range is one year. Country and region codes use three letters; common examples include `USA`, `CHN`, `IDN`, `PHL`, and `GBR`. Invalid dates, company names, `company_role`, `catalog`, or country codes fail immediately without creating a job.
+</Note>
+
+## Single-section result
+
+For a successful job, `item.result` contains the query scope and a paginated `data` object:
+
+```json Response body
+{
+  "company_name": "BANBROS COMMERCIAL INC",
+  "company_role": "importer",
+  "catalog": "imports",
+  "date_range": {
+    "start": "2025-08-01",
+    "end": "2026-07-31"
+  },
+  "section": "counterparties",
+  "data": {
+    "total": 42,
+    "page": 1,
+    "page_size": 20,
+    "returned_rows": 20,
+    "items": [
+      {
+        "name": "Example Trading Co.",
+        "country": "United States",
+        "countryCode": "US",
+        "tradeCount": 18,
+        "sumOfUSD": 250000,
+        "amountSharePct": 21.4
+      }
+    ]
+  }
+}
+```
+
+Public rows can contain only these stable fields:
+
+- `name`
+- `country`
+- `countryCode`
+- `date`
+- `hsCode`
+- `hsDescriptionCn`
+- `hsDescriptionEn`
+- `companyCount`
+- `weight`
+- `quantity`
+- `sumOfUSD`
+- `weightAvgPrice`
+- `quantityAvgPrice`
+- `tradeCount`
+- `amountSharePct`
+
+Not every section returns every field.
+
+## Complete report result
+
+`item.result` from `trade-reports` is grouped by section:
+
+```json Response body
+{
+  "company_name": "BANBROS COMMERCIAL INC",
+  "company_role": "importer",
+  "catalog": "imports",
+  "date_range": {
+    "start": "2025-08-01",
+    "end": "2026-07-31"
+  },
+  "status": "partial",
+  "sections": {
+    "counterparties": {
+      "status": "complete",
+      "data": {
+        "total": 42,
+        "page": 1,
+        "page_size": 20,
+        "returned_rows": 20,
+        "items": []
+      }
+    },
+    "categories": {
+      "status": "complete",
+      "data": {}
+    },
+    "trend": {
+      "status": "failed",
+      "error": {
+        "code": "customs_section_failed"
+      }
+    },
+    "countries": {
+      "status": "complete",
+      "data": {}
+    }
+  }
+}
+```
+
+<Warning>
+  A complete report may partially succeed. Check each section's `status`; a `succeeded` job does not imply that all four sections succeeded.
+</Warning>
+
+## Credits
+
+Current default customs pricing is based on rows returned.
+
+| Result section | Credits per returned row |
+| --- | ---: |
+| Company discovery (`companies/search`) | 3.6 |
+| Counterparties | 3.6 |
+| Trends | 3.6 |
+| Categories | 3.0 |
+| Countries | 3.0 |
+| Company-name candidates | Free |
+
+<Note>
+  Before execution, the service may reserve enough credits for the requested page size and sections. Final settlement uses actual returned rows, rounds the aggregate charge up to a whole credit, and releases unused reservation. Treat the completed job's `billing.charged_credits` as the source of truth. Pricing can change with the active billing configuration.
+</Note>

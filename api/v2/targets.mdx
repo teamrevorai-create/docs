@@ -1,0 +1,123 @@
+---
+title: "Prospect discovery"
+description: "Revor AI continuously finds companies or people that match natural-language criteria and stores them in a prospect list that supports pagination and live updates. New integrations can use /api/v2/prospect-lists; existing JSON fields continue to call this resource a webset."
+keywords: ["Revor AI", "API v2", "Prospect discovery"]
+---
+
+Revor AI continuously finds companies or people that match natural-language criteria and stores them in a prospect list that supports pagination and live updates. New integrations can use `/api/v2/prospect-lists`; existing JSON fields continue to call this resource a `webset`.
+
+## Compatibility
+
+<Note>
+  All existing `/api/v2/websets` endpoints remain supported. The new paths execute the same handlers.
+</Note>
+
+| Existing path | Recommended path |
+| --- | --- |
+| `/api/v2/websets` | `/api/v2/prospect-lists` |
+| `/api/v2/websets/{webset_id}` | `/api/v2/prospect-lists/{webset_id}` |
+| `/api/v2/websets/{webset_id}/strategy` | `/api/v2/prospect-lists/{webset_id}/search-plan` |
+| `/api/v2/websets/{webset_id}/items` | `/api/v2/prospect-lists/{webset_id}/prospects` |
+| `/api/v2/websets/{webset_id}/find-more` | `/api/v2/prospect-lists/{webset_id}/expand` |
+
+Both stream endpoints also remain available under the corresponding old and new paths. Parameters, response fields such as `webset.id` and `webset_id`, permissions, SSE event names, and billing rules are unchanged. URLs in existing response fields may still use `/api/v2/websets` and remain valid. When retrying the same operation through either URL, keep the same API key, request body, and `Idempotency-Key`; both URLs share the original idempotency record.
+
+## Recommended workflows
+
+### Create a new list
+
+<Steps>
+  <Step title="Create a list">
+    Call [`POST /prospect-lists`](/api/v2/websets-create) and save `webset.id`.
+  </Step>
+  <Step title="Get an authoritative snapshot">
+    Call [`GET /prospect-lists/{id}/prospects`](/api/v2/websets-items) for an authoritative snapshot.
+  </Step>
+  <Step title="Open the live stream">
+    Open [Items SSE](/api/v2/websets-items-stream) with the snapshot's `stream_cursor + items_revision`.
+  </Step>
+  <Step title="Apply incremental updates">
+    Apply `items.changed` events until `complete`.
+  </Step>
+  <Step title="Handle reset events">
+    On `reset`, replace local state with a new snapshot and reconnect from its checkpoint.
+  </Step>
+</Steps>
+
+### Find more prospects
+
+<Steps>
+  <Step title="Save the checkpoint">
+    Read the current Items snapshot and retain the checkpoint from its first page.
+  </Step>
+  <Step title="Start an expand job">
+    Call [`POST /prospect-lists/{id}/expand`](/api/v2/websets-find-more) and save `item.id`.
+  </Step>
+  <Step title="Subscribe to the expand stream">
+    Open [Find More SSE](/api/v2/websets-find-more-stream) with that `job_id` and the old checkpoint.
+  </Step>
+  <Step title="Apply changes">
+    Apply changes until `complete`.
+  </Step>
+</Steps>
+
+<Info>
+  Snapshot first, then stream. This closes the gap between the two requests. A stream opened without a checkpoint starts at the latest event and only delivers future changes.
+</Info>
+
+## Endpoints
+
+<CardGroup cols={2}>
+  <Card title="POST /api/v2/prospect-lists" icon="plus" href="/api/v2/websets-create">
+    Create a company or person prospect list
+  </Card>
+
+  <Card title="GET /api/v2/prospect-lists" icon="list" href="/api/v2/websets-list">
+    Page through the current user's lists
+  </Card>
+
+  <Card title="GET /api/v2/prospect-lists/{id}" icon="search" href="/api/v2/websets-detail">
+    Get status, criteria, and progress
+  </Card>
+
+  <Card title="GET /api/v2/prospect-lists/{id}/search-plan" icon="globe" href="/api/v2/websets-strategy">
+    Read criteria and search strategy
+  </Card>
+
+  <Card title="GET /api/v2/prospect-lists/{id}/prospects" icon="list" href="/api/v2/websets-items">
+    Page through an authoritative item snapshot
+  </Card>
+
+  <Card title="GET /api/v2/prospect-lists/{id}/prospects/stream" icon="radio" href="/api/v2/websets-items-stream">
+    Stream state, strategy, and item changes
+  </Card>
+
+  <Card title="POST /api/v2/prospect-lists/{id}/expand" icon="plus" href="/api/v2/websets-find-more">
+    Continue discovery on an existing list
+  </Card>
+
+  <Card title="GET /api/v2/prospect-lists/{id}/expand/stream" icon="radio" href="/api/v2/websets-find-more-stream">
+    Stream one specific Find More operation
+  </Card>
+</CardGroup>
+
+## Permissions
+
+Reads and SSE require `websets:read`. Create and Find More require `websets:write`. Resources are isolated by the API key owner's user account; another user's ID returns `404 webset_not_found`.
+
+## Statuses
+
+```text Status values
+draft | generating_criteria | ready | queued | searching | verifying |
+completed | failed | cancelled
+```
+
+<Warning>
+  A `preparation_job` only reports whether creation or Find More started successfully. The Webset status reports whether prospect discovery is complete.
+</Warning>
+
+## Two cursor types
+
+- `next_cursor` is an opaque REST pagination cursor. Pass it unchanged to the next page.
+- `stream_cursor` is a numeric SSE event cursor. Store it together with `items_revision`.
+- The cursor types are not interchangeable.

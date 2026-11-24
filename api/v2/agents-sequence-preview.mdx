@@ -1,0 +1,143 @@
+---
+title: "Preview sequence follow-up"
+description: "Preview a follow-up message for a saved sequence."
+api: "POST https://revor.ai/api/v2/agents/{agentId}/sequence/preview"
+authMethod: "bearer"
+playground: "simple"
+keywords:
+  - "Revor AI"
+  - "API v2"
+  - "Preview sequence follow-up"
+---
+
+Preview a follow-up message for a saved and enabled outreach sequence.
+
+## Overview
+
+|  |  |
+| --- | --- |
+| Method | `POST` |
+| Path | `/api/v2/agents/{agentId}/sequence/preview` |
+| Permission | `agents:write` |
+| Idempotency | Required (`Idempotency-Key` header) |
+| Rate limit | `expensive_create` |
+| Returns | Public job (poll `GET /api/v2/jobs/{id}`) |
+
+## Path parameter
+
+<ParamField path="agentId" type="string" required>
+  UUID of the agent with an icebreaker configuration.
+</ParamField>
+
+## Request body
+
+<ParamField body="config_version" type="integer" required>
+  Must match the saved sequence version.
+</ParamField>
+
+<ParamField body="round_no" type="integer" required>
+  Round number to preview.
+</ParamField>
+
+<ParamField body="channel" type="string" required>
+  One of `email`, `linkedin`, or `whatsapp`.
+</ParamField>
+
+<ParamField body="locale" type="string">
+  Defaults to `en`.
+</ParamField>
+
+<ParamField body="research" type="boolean">
+  `true` requires the round's preview research toggle and a research run reference.
+</ParamField>
+
+<ParamField body="first_touch_subject" type="string">
+  Subject of the first-touch preview.
+</ParamField>
+
+<ParamField body="first_touch_text" type="string" required>
+  Body of the first-touch preview message.
+</ParamField>
+
+<ParamField body="recipient_name" type="string" required>
+</ParamField>
+
+<ParamField body="recipient_company" type="string" required>
+</ParamField>
+
+<ParamField body="recipient_title" type="string">
+  Recipient's title.
+</ParamField>
+
+<ParamField body="recipient_company_detail" type="string">
+  Additional company details.
+</ParamField>
+
+<ParamField body="lead_cursor" type="string">
+  An existing preview contact cursor.
+</ParamField>
+
+<ParamField body="prior_preview_messages" type="array" required>
+  Strictly increasing earlier follow-up `round_no`/`subject`/`body` entries. `subject` may be null.
+</ParamField>
+
+```bash cURL
+curl -X POST "https://revor.ai/api/v2/agents/{agentId}/sequence/preview" \
+  -H "Authorization: Bearer sk-revor-REPLACE_ME" \
+  -H "Idempotency-Key: seq-preview-001" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "config_version": 1,
+    "round_no": 2,
+    "channel": "email",
+    "locale": "en",
+    "research": false,
+    "first_touch_subject": "Introduction",
+    "first_touch_text": "The first preview message",
+    "recipient_name": "Alice",
+    "recipient_company": "Example Manufacturing",
+    "prior_preview_messages": []
+  }'
+```
+
+## Response
+
+```json 202
+{
+  "ok": true,
+  "request_id": "req_xxx",
+  "item": {
+    "id": "job-uuid",
+    "status": "queued",
+    "type": "agent_sequence_preview"
+  }
+}
+```
+
+### Research previews
+
+`research=true` requires the round's `preview_research_enabled` and either `first_touch_run_id` or a client-generated `preview_thread_id` UUID. `previous_run_id` may reference the most recent earlier research preview. These run IDs are `research_run_id` from preview results, not public job IDs. Reuse the same thread ID across a preview thread. Owner, agent, recipient, and referenced first/prior message text must match. Ordinary previews reject research run references. Approved Meta templates are previewed directly and cannot add research.
+
+### Billing
+
+- Ordinary previews consume one ordinary outreach unit.
+- Research previews consume one research unit without an extra ordinary charge.
+- Results include `messages`, `agent_id`, `agent_version`, `config_version`, `round_no`, `research_run_id`, and billing.
+- Retries reuse frozen configuration.
+- Confirmed failures refund reservations.
+- Unknown outcomes retain the original batch for recovery without regenerating.
+- Cancellation is allowed only before first execution.
+
+<Note>
+  Save and enable the sequence first. Poll `GET /api/v2/jobs/{id}` with `agents:read`.
+</Note>
+
+## Errors
+
+| HTTP | Code | Meaning |
+| --- | --- | --- |
+| `400` | `agent_input_invalid` | Request does not match the contract |
+| `403` | `permission_denied` | Missing required permission |
+| `404` | `agent_not_found` | Agent does not exist, was deleted, or belongs to another user |
+| `404` | `agent_sequence_unavailable` | Feature not enabled for this agent |
+| `500` | `agent_operation_failed` | Operation failed. Read current state before retrying |

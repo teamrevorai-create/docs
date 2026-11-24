@@ -1,0 +1,84 @@
+---
+title: "Create agent from website"
+description: "Create a draft agent from a company website."
+api: "POST https://revor.ai/api/v2/agents/from-website"
+authMethod: "bearer"
+playground: "simple"
+keywords:
+  - "Revor AI"
+  - "API v2"
+  - "Create agent from website"
+---
+
+Create a draft agent from a company website.
+
+## Overview
+
+|  |  |
+| --- | --- |
+| Method | `POST` |
+| Path | `/api/v2/agents/from-website` |
+| Permission | `agents:write` |
+| Idempotency | Required (`Idempotency-Key` header) |
+| Returns | Public job (poll `GET /api/v2/jobs/{id}`) |
+
+## Request body
+
+<ParamField body="company_website" type="string" required>
+  A domain or HTTP(S) website URL.
+</ParamField>
+
+<ParamField body="mode" type="string" required>
+  `icebreaker` or `autoreply`.
+</ParamField>
+
+<ParamField body="locale" type="string">
+  Defaults to `en`.
+</ParamField>
+
+<ParamField body="name" type="string">
+  Optional. A name for the new agent.
+</ParamField>
+
+```bash cURL
+curl -X POST "https://revor.ai/api/v2/agents/from-website" \
+  -H "Authorization: Bearer sk-revor-REPLACE_ME" \
+  -H "Idempotency-Key: agent-from-web-001" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "company_website": "example.com",
+    "mode": "icebreaker",
+    "locale": "en",
+    "name": "Example outreach agent"
+  }'
+```
+
+## Response
+
+```json 202
+{
+  "ok": true,
+  "request_id": "req_xxx",
+  "item": {
+    "id": "job-uuid",
+    "status": "queued",
+    "type": "agent_from_website"
+  }
+}
+```
+
+### Behavior
+
+- Returns `202` with `item` (public job).
+- Poll `GET /api/v2/jobs/{id}`; successful `result.item.id` identifies the agent.
+- Both modes create a draft without binding or publishing.
+- Outreach (`icebreaker`) uses V2; customer service (`autoreply`) uses V1.
+- Reuse the same idempotency key for retries of the same request.
+
+## Errors
+
+| HTTP | Code | Meaning |
+| --- | --- | --- |
+| `400` | `agent_input_invalid` | Request does not match the contract |
+| `403` | `permission_denied` | Missing required permission |
+| `500` | `agent_operation_failed` | Operation failed. Read current state before retrying |

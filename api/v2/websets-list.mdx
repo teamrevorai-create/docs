@@ -1,0 +1,189 @@
+---
+title: "List prospect lists"
+description: "Page through your Revor AI prospect lists, filter companies or people, and continue with cursor pagination."
+api: "GET https://revor.ai/api/v2/prospect-lists"
+authMethod: "bearer"
+playground: "simple"
+keywords:
+  - "Revor AI"
+  - "API v2"
+  - "prospect lists"
+---
+
+Page through Revor AI prospect lists owned by the API key's user. Requires `websets:read`.
+
+<Note>
+  The existing `GET /api/v2/websets` endpoint remains supported with the same parameters, response fields, and permissions. Both URLs execute the same operation.
+</Note>
+
+## At a glance
+
+|  |  |
+| --- | --- |
+| Method | `GET` |
+| Path | `https://revor.ai/api/v2/prospect-lists` |
+| Permission | `websets:read` |
+
+## Request example
+
+```bash cURL
+curl --get \
+  --url "https://revor.ai/api/v2/prospect-lists" \
+  --header "Authorization: Bearer sk-revor-REPLACE_ME" \
+  --data-urlencode "limit=20" \
+  --data-urlencode "target_kind=company"
+```
+
+## Response
+
+```json 200
+{
+  "ok": true,
+  "request_id": "req_xxx",
+  "items": [
+    {
+      "id": "webset-uuid",
+      "name": "North American excavator companies",
+      "query": "Excavator manufacturers, dealers, and rental providers...",
+      "target_kind": "company",
+      "status": "verifying",
+      "progress": {
+        "stage": "verifying",
+        "goal": 25,
+        "verify_cap": 75,
+        "verified": 31,
+        "qualified": 18,
+        "full": 12,
+        "stop_reason": null,
+        "updated_at": "2026-09-24T08:00:00.000Z"
+      },
+      "created_at": "2026-09-24T07:58:00.000Z",
+      "started_at": "2026-09-24T07:58:10.000Z",
+      "finished_at": null,
+      "updated_at": "2026-09-24T08:00:00.000Z"
+    }
+  ],
+  "next_cursor": null,
+  "has_more": false
+}
+```
+
+## Query parameters
+
+<ParamField query="limit" default="20" type="integer">
+  Number of lists per page. Accepts values from `1` to `100`.
+</ParamField>
+
+<ParamField query="target_kind" type="string">
+  Filter by `company` or `person`. Omit this parameter to return both kinds.
+</ParamField>
+
+<ParamField query="cursor" type="string">
+  Use the previous page's `next_cursor` unchanged. Do not parse or modify it.
+</ParamField>
+
+## Response fields
+
+<ResponseField name="ok" type="boolean">
+  Whether the request succeeded.
+</ResponseField>
+
+<ResponseField name="request_id" type="string">
+  Request identifier.
+</ResponseField>
+
+<ResponseField name="items" type="object[]">
+  Prospect lists on the current page.
+
+  <Expandable title="properties">
+    <ResponseField name="id" type="string">
+      List ID.
+    </ResponseField>
+
+    <ResponseField name="name" type="string">
+      List name.
+    </ResponseField>
+
+    <ResponseField name="query" type="string">
+      Original natural-language criteria.
+    </ResponseField>
+
+    <ResponseField name="target_kind" type="string">
+      `company` or `person`.
+    </ResponseField>
+
+    <ResponseField name="status" type="string">
+      Current status.
+    </ResponseField>
+
+    <ResponseField name="progress" type="object">
+      Progress details.
+
+      <Expandable title="properties">
+        <ResponseField name="stage" type="string">
+          Current stage.
+        </ResponseField>
+
+        <ResponseField name="goal" type="integer">
+          Target count.
+        </ResponseField>
+
+        <ResponseField name="verify_cap" type="integer">
+          Verification cap.
+        </ResponseField>
+
+        <ResponseField name="verified" type="integer">
+          Verified count.
+        </ResponseField>
+
+        <ResponseField name="qualified" type="integer">
+          Qualified count.
+        </ResponseField>
+
+        <ResponseField name="full" type="integer">
+          Fully matching count.
+        </ResponseField>
+
+        <ResponseField name="stop_reason" type="string | null">
+          Stop reason.
+        </ResponseField>
+
+        <ResponseField name="updated_at" type="string">
+          Last updated.
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+
+    <ResponseField name="created_at" type="string">
+      Creation time.
+    </ResponseField>
+
+    <ResponseField name="started_at" type="string">
+      Start time.
+    </ResponseField>
+
+    <ResponseField name="finished_at" type="string | null">
+      Finish time.
+    </ResponseField>
+
+    <ResponseField name="updated_at" type="string">
+      Last updated.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="next_cursor" type="string | null">
+  Cursor for the next page; `null` when no cursor is returned.
+</ResponseField>
+
+<ResponseField name="has_more" type="boolean">
+  Whether more pages are available.
+</ResponseField>
+
+## Pagination
+
+When `has_more=true`, pass `next_cursor` unchanged to the next request. This is a REST pagination cursor, not the SSE `stream_cursor`.
+
+<Accordion title="Searches and imported lists">
+  Lists include Revor searches and imported CSV/XLSX tables. `source` identifies `revor`, `tabular_import`, or historical `csv_import`; `total_items` is the stored row count. Imports use `importing` while processing and have null search-goal and verification statistics.
+</Accordion>

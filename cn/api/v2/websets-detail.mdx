@@ -1,0 +1,212 @@
+---
+title: "查询潜客名单详情"
+description: "此接口也支持导入表格，返回 source、total_items 和导入状态。导入期间为 importing，搜索匹配统计为 null。导入表格使用详情轮询及行数据分页；搜索策略、Find More 和搜索 SSE 仅适用于 Revor 挖掘名单。"
+keywords: ["Revor AI", "API v2", "查询潜客名单详情"]
+api: "GET https://revor.ai/api/v2/prospect-lists/{webset_id}"
+authMethod: "bearer"
+playground: "simple"
+---
+
+查询名单状态、进度、条件和时间信息。需要 `websets:read` 权限。
+
+## 接口概览
+
+|  |  |
+| --- | --- |
+| 方法 | `GET` |
+| 路径 | `/api/v2/prospect-lists/{webset_id}` |
+| 权限 | `websets:read` |
+| 返回 | `200`，含 `item` |
+
+原入口 `GET /api/v2/websets/{webset_id}` 继续支持，参数、返回字段和权限均保持一致。两个 URL 执行同一操作。
+
+此接口也支持导入表格，返回 `source`、`total_items` 和导入状态。导入期间为 `importing`，搜索匹配统计为 `null`。导入表格使用详情轮询及行数据分页；搜索策略、Find More 和搜索 SSE 仅适用于 Revor 挖掘名单。
+
+## 请求
+
+```bash cURL
+curl "https://revor.ai/api/v2/prospect-lists/WEBSET_ID" \
+  -H "Authorization: Bearer sk-revor-REPLACE_ME"
+```
+
+## 响应
+
+```json 200
+{
+  "ok": true,
+  "request_id": "req_xxx",
+  "item": {
+    "id": "webset-uuid",
+    "name": "北美挖掘机公司",
+    "query": "北美地区的挖掘机制造商……",
+    "target_kind": "company",
+    "status": "searching",
+    "progress": {
+      "stage": "searching",
+      "goal": 25,
+      "verify_cap": 75,
+      "verified": 0,
+      "qualified": 0,
+      "full": 0,
+      "stop_reason": null,
+      "updated_at": "2026-09-24T08:00:00.000Z"
+    },
+    "criteria": [
+      {
+        "id": "criterion-1",
+        "description": "实际制造、销售、出租或维修挖掘机",
+        "type": "business_fit",
+        "weight": 0.65,
+        "required": true,
+        "active": true
+      }
+    ],
+    "failure": null,
+    "created_at": "2026-09-24T07:58:00.000Z",
+    "started_at": "2026-09-24T07:58:10.000Z",
+    "finished_at": null,
+    "updated_at": "2026-09-24T08:00:00.000Z"
+  }
+}
+```
+
+## 响应字段
+
+<ResponseField name="ok" type="boolean">
+  请求是否成功。
+</ResponseField>
+
+<ResponseField name="request_id" type="string">
+  请求标识。
+</ResponseField>
+
+<ResponseField name="item" type="object">
+  名单详情。
+
+  <Expandable title="properties">
+    <ResponseField name="id" type="string">
+      名单 ID。
+    </ResponseField>
+
+    <ResponseField name="name" type="string">
+      名单名称。
+    </ResponseField>
+
+    <ResponseField name="query" type="string">
+      创建时的自然语言条件。
+    </ResponseField>
+
+    <ResponseField name="target_kind" type="string">
+      `company` 或 `person`。
+    </ResponseField>
+
+    <ResponseField name="status" type="string">
+      当前状态。
+    </ResponseField>
+
+    <ResponseField name="progress" type="object">
+      进度信息。
+
+      <Expandable title="properties">
+        <ResponseField name="stage" type="string">
+          当前阶段。
+        </ResponseField>
+
+        <ResponseField name="goal" type="integer">
+          希望交付的合格结果总数。
+        </ResponseField>
+
+        <ResponseField name="verify_cap" type="integer">
+          本轮允许核验的候选上限，不是结果数。
+        </ResponseField>
+
+        <ResponseField name="verified" type="integer">
+          当前一次创建或 Find More 运行已核验的数量；新运行会重新计数。
+        </ResponseField>
+
+        <ResponseField name="qualified" type="integer">
+          当前结果池中的 `full + partial` 数量，可能包含尚未释放的 overflow。
+        </ResponseField>
+
+        <ResponseField name="full" type="integer">
+          完全符合条件的数量。
+        </ResponseField>
+
+        <ResponseField name="stop_reason" type="string | null">
+          本轮停止原因。
+        </ResponseField>
+
+        <ResponseField name="updated_at" type="string">
+          更新时间。
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+
+    <ResponseField name="criteria" type="object[]">
+      条件列表。
+
+      <Expandable title="properties">
+        <ResponseField name="id" type="string">
+          条件 ID。
+        </ResponseField>
+
+        <ResponseField name="description" type="string">
+          条件描述。
+        </ResponseField>
+
+        <ResponseField name="type" type="string">
+          条件类型。
+        </ResponseField>
+
+        <ResponseField name="weight" type="number">
+          权重。
+        </ResponseField>
+
+        <ResponseField name="required" type="boolean">
+          是否必需。
+        </ResponseField>
+
+        <ResponseField name="active" type="boolean">
+          是否激活。
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+
+    <ResponseField name="failure" type="object | null">
+      失败信息；未失败时为 `null`。
+    </ResponseField>
+
+    <ResponseField name="created_at" type="string">
+      创建时间。
+    </ResponseField>
+
+    <ResponseField name="started_at" type="string">
+      开始时间。
+    </ResponseField>
+
+    <ResponseField name="finished_at" type="string | null">
+      完成时间。
+    </ResponseField>
+
+    <ResponseField name="updated_at" type="string">
+      更新时间。
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## 进度字段
+
+<Note>
+  Find More 后 `verified` 变小而 `qualified` 增长是正常现象。最终可见结果以 Items 分页为准。
+</Note>
+
+- `goal`：希望交付的合格结果总数。
+- `verify_cap`：本轮允许核验的候选上限，不是结果数。
+- `verified`：当前一次创建或 Find More 运行已核验的数量；新运行会重新计数。
+- `qualified`：当前结果池中的 `full + partial` 数量，可能包含尚未释放的 overflow。
+- `full`：完全符合条件的数量。
+- `stop_reason`：本轮停止原因。
+
+## 失败
+
+`status=failed` 时读取 `failure.code`。不存在或不属于当前用户的 ID 返回 `404 webset_not_found`。

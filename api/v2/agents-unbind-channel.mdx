@@ -1,0 +1,75 @@
+---
+title: "Unbind channel"
+description: "Unbind a channel from an agent."
+api: "DELETE https://revor.ai/api/v2/agents/{agentId}/channel-bindings/{channel}"
+authMethod: "bearer"
+playground: "simple"
+keywords:
+  - "Revor AI"
+  - "API v2"
+  - "Unbind channel"
+---
+
+Unbind a channel from an agent.
+
+## Overview
+
+|  |  |
+| --- | --- |
+| Method | `DELETE` |
+| Path | `/api/v2/agents/{agentId}/channel-bindings/{channel}` |
+| Permission | `agents.bindings:write` |
+
+## Path parameters
+
+<ParamField path="agentId" type="string" required>
+  UUID of the agent.
+</ParamField>
+
+<ParamField path="channel" type="string" required>
+  Must be `linkedin`, `whatsapp`, or `email`.
+</ParamField>
+
+## Request body
+
+<ParamField body="expected_updated_at" type="string" required>
+  Version from `GET /api/v2/agents/{agentId}`.
+</ParamField>
+
+```bash cURL
+curl -X DELETE "https://revor.ai/api/v2/agents/{agentId}/channel-bindings/{channel}" \
+  -H "Authorization: Bearer sk-revor-REPLACE_ME" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "expected_updated_at": "2026-11-13T04:44:50.096+00:00"
+  }'
+```
+
+## Response
+
+```json 200
+{
+  "ok": true,
+  "request_id": "req_xxx",
+  "item": {
+    "id": "agent-uuid",
+    "updated_at": "2026-11-13T04:44:50.096+00:00"
+  }
+}
+```
+
+### Behavior
+
+- Each operation changes one channel and preserves the others.
+- PATCH rejects binding fields.
+- Existing ownership, channel matching, autoreply account occupancy, and active-agent rules apply.
+
+## Errors
+
+| HTTP | Code | Meaning |
+| --- | --- | --- |
+| `400` | `agent_input_invalid` | Request does not match the contract |
+| `403` | `permission_denied` | Missing required permission |
+| `404` | `agent_not_found` | Agent does not exist, was deleted, or belongs to another user |
+| `409` | `agent_config_conflict` | Version expired or concurrent modification |
+| `500` | `agent_operation_failed` | Operation failed. Read current state before retrying |

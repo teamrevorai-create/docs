@@ -1,0 +1,72 @@
+---
+title: "Get sequence"
+description: "Read an agent's sequence configuration and version."
+api: "GET https://revor.ai/api/v2/agents/{agentId}/sequence"
+authMethod: "bearer"
+playground: "simple"
+keywords:
+  - "Revor AI"
+  - "API v2"
+  - "Get sequence"
+---
+
+Read sequence configuration and version for an agent.
+
+## Overview
+
+|  |  |
+| --- | --- |
+| Method | `GET` |
+| Path | `/api/v2/agents/{agentId}/sequence` |
+| Permission | `agents:read` |
+| Rate limit | `read` |
+| Returns | `item` |
+
+## Path parameter
+
+<ParamField path="agentId" type="string" required>
+  UUID of the agent with an icebreaker configuration.
+</ParamField>
+
+## Request example
+
+```bash cURL
+curl -X GET "https://revor.ai/api/v2/agents/{agentId}/sequence" \
+  -H "Authorization: Bearer sk-revor-REPLACE_ME"
+```
+
+## Response
+
+```json 200
+{
+  "ok": true,
+  "request_id": "req_xxx",
+  "item": {
+    "enabled": true,
+    "version": 1,
+    "updated_at": "2026-11-13T04:44:50.096+00:00",
+    "rounds": [
+      {
+        "round_no": 2,
+        "wait_days": 3,
+        "strategy_key": "value_add",
+        "content_generation_mode": "ai_personalized",
+        "content_input": "Share an application example and offer samples",
+        "preview_research_enabled": false,
+        "attachment_mode": "none"
+      }
+    ]
+  }
+}
+```
+
+### Sequence fields
+
+- An unconfigured sequence has `version: 0` and no rounds.
+- Configured rounds start at round 2.
+- `round_no` and `live_research_enabled` are read-only.
+- Internal hashes, model settings, and authorization versions are omitted.
+
+<Note>
+  Sequence configuration is a separate resource at `/api/v2/agents/{agentId}/sequence`, not part of the base PATCH. It requires an icebreaker agent and the same rollout gate as Console: an administrator or the existing `MB_SMART_OUTREACH_SEQUENCE_UI_ENABLED` deployment flag. Otherwise it returns `404` `agent_sequence_unavailable`. Autoreply reactivation is a different capability and is not exposed here.
+</Note>

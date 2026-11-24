@@ -1,0 +1,73 @@
+---
+title: "Get agent"
+description: "Read an agent's full configuration and channel bindings."
+api: "GET https://revor.ai/api/v2/agents/{agentId}"
+authMethod: "bearer"
+playground: "simple"
+keywords:
+  - "Revor AI"
+  - "API v2"
+  - "Get agent"
+---
+
+Read configuration and channel bindings for a specific agent.
+
+## Overview
+
+|  |  |
+| --- | --- |
+| Method | `GET` |
+| Path | `/api/v2/agents/{agentId}` |
+| Permission | `agents:read` |
+| Returns | `item` |
+
+## Path parameter
+
+<ParamField path="agentId" type="string" required>
+  UUID of the agent.
+</ParamField>
+
+## Request example
+
+```bash cURL
+curl -X GET "https://revor.ai/api/v2/agents/{agentId}" \
+  -H "Authorization: Bearer sk-revor-REPLACE_ME"
+```
+
+## Response
+
+```json 200
+{
+  "ok": true,
+  "request_id": "req_xxx",
+  "item": {
+    "id": "agent-uuid",
+    "name": "Sales assistant",
+    "description": "Outreach agent",
+    "status": "active",
+    "default_mode": "icebreaker",
+    "config_mode": "simple",
+    "generation_contract_version": 2,
+    "created_at": "2026-10-13T04:44:50.096+00:00",
+    "updated_at": "2026-11-13T04:44:50.096+00:00",
+    "channel_bindings": {
+      "email": {
+        "account_id": "account-uuid",
+        "bound_at": "2026-11-13T04:44:50.096+00:00"
+      },
+      "linkedin": null,
+      "whatsapp": null
+    }
+  }
+}
+```
+
+### Response fields
+
+Detail responses additionally include editable configuration, `config_mode`, `created_at`, and `channel_bindings`. Each `linkedin`/`whatsapp`/`email` binding is `null` or an object containing `account_id` and `bound_at`.
+
+Use the existing `GET /api/v2/connect/accounts` to select an account.
+
+<Note>
+  Reads use the `read` rate-limit bucket.
+</Note>

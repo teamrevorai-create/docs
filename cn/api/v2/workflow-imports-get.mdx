@@ -1,0 +1,66 @@
+---
+title: "查询导入进度"
+description: "获取导入任务的状态、进度和结果统计。"
+api: "GET https://revor.ai/api/v2/imports/{runId}"
+authMethod: "bearer"
+playground: "simple"
+keywords:
+  - "Revor AI"
+  - "API v2"
+  - "查询导入进度"
+---
+
+查询导入任务的当前状态、进度统计和结果信息。使用返回的 `webset_ids` 读取结果。
+
+## 接口概览
+
+|  |  |
+| --- | --- |
+| 方法 | `GET` |
+| 路径 | `/api/v2/imports/{runId}` |
+| 权限 | `prospects.imports:read` |
+
+## 路径参数
+
+<ParamField path="runId" type="string" required>
+  导入任务 ID。
+</ParamField>
+
+## 请求示例
+
+```bash cURL
+curl "https://revor.ai/api/v2/imports/import-uuid" \
+  -H "Authorization: Bearer sk-revor-REPLACE_ME"
+```
+
+## 响应
+
+```json 200
+{
+  "item": {
+    "id": "import-uuid",
+    "webset_id": "webset-uuid",
+    "source_kind": "csv",
+    "status": "completed",
+    "received_rows": 500,
+    "inserted_rows": 450,
+    "merged_rows": 50,
+    "added_contacts": 200,
+    "added_channels": 300,
+    "items_revision": 10
+  }
+}
+```
+
+响应 `item` 包含：
+
+- `id` - 导入任务 ID
+- `webset_id` - 目标表格 ID
+- `source_kind` - 来源类型
+- `status` - 任务状态
+- `received_rows` - 接收行数
+- `inserted_rows` - 新增行数
+- `merged_rows` - 合并行数
+- `added_contacts` - 新增联系人数
+- `added_channels` - 新增渠道数
+- `items_revision`

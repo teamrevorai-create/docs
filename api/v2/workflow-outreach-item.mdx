@@ -1,0 +1,47 @@
+---
+title: "Get outreach item targets"
+description: "Get targets for a single outreach item by channel."
+api: "GET https://revor.ai/api/v2/websets/{websetId}/smart-outreach/items/{itemId}"
+authMethod: "bearer"
+playground: "simple"
+keywords:
+  - "Revor AI"
+  - "API v2"
+  - "Get outreach item targets"
+---
+
+Get the targets for a single table item within a smart outreach plan. Use the target `id` for the draft interface.
+
+## Overview
+
+| | |
+| --- | --- |
+| Method | `GET` |
+| Path | `/api/v2/websets/{websetId}/smart-outreach/items/{itemId}` |
+| Permission | `outreach.plans:read` |
+| Returns | Outreach targets for the item |
+
+## Path parameters
+
+<ParamField path="websetId" type="string" required>
+  Table UUID.
+</ParamField>
+
+<ParamField path="itemId" type="string" required>
+  Row UUID.
+</ParamField>
+
+## Query parameters
+
+<ParamField query="channel" type="string" required>
+  Channel filter, for example `email`.
+</ParamField>
+
+## Response
+
+Returns targets for one item. The target `id` is used for the draft interface.
+
+```bash cURL
+curl -X GET "https://revor.ai/api/v2/websets/{websetId}/smart-outreach/items/{itemId}?channel=email" \
+  -H "Authorization: Bearer sk-revor-REPLACE_ME"
+```

@@ -1,0 +1,136 @@
+---
+title: "启动智能触达"
+description: "为指定表格的选中行启动智能触达计划。"
+api: "POST https://revor.ai/api/v2/websets/{websetId}/smart-outreach/start"
+authMethod: "bearer"
+playground: "simple"
+keywords:
+  - "Revor AI"
+  - "API v2"
+  - "启动智能触达"
+---
+
+为指定表格的选中行启动智能触达计划。启动前必须先调用 [`GET /smart-outreach`](/cn/api/v2/workflow-outreach-get) 获取归属信息。
+
+## 接口概览
+
+|  |  |
+| --- | --- |
+| 方法 | `POST` |
+| 路径 | `/api/v2/websets/{websetId}/smart-outreach/start` |
+| 权限 | `outreach.plans:write` |
+| 幂等性 | 通过 `Idempotency-Key` 请求头实现 |
+
+## 路径参数
+
+<ParamField path="websetId" type="string" required>
+  表格 UUID。
+</ParamField>
+
+## 请求体
+
+```json 启动触达
+{
+  "agent_id": "智能体UUID",
+  "start_request_id": "本次启动请求UUID",
+  "expected_owner_agent_id": null,
+  "expected_ownership_version": 0,
+  "item_ids": ["行UUID"],
+  "channels": ["email"],
+  "schedule_type": "daily",
+  "time_of_day": "09:00",
+  "timezone": "Asia/Shanghai",
+  "ui_locale": "zh"
+}
+```
+
+<ParamField body="agent_id" type="string" required>
+  触达智能体 UUID。
+</ParamField>
+
+<ParamField body="start_request_id" type="string" required>
+  本次启动请求 UUID。
+</ParamField>
+
+<ParamField body="expected_owner_agent_id" type="string">
+  必须与实际 GET 返回的 `owner_agent_id` 一致。无归属时传 `null`。
+</ParamField>
+
+<ParamField body="expected_ownership_version" type="number" required>
+  必须与实际 GET 返回的 `ownership_version` 一致。
+</ParamField>
+
+<ParamField body="item_ids" type="string[]" required>
+  非空行 UUID 数组，最多 1000 行。
+</ParamField>
+
+<ParamField body="channels" type="string[]" required>
+  触达渠道列表，例如 `["email"]`。
+</ParamField>
+
+<ParamField body="schedule_type" type="string" required>
+  `"daily"` 或 `"weekly"`。
+</ParamField>
+
+<ParamField body="time_of_day" type="string" required>
+  `HH:MM` 格式时间。
+</ParamField>
+
+<ParamField body="timezone" type="string" required>
+  IANA 时区标识，例如 `"Asia/Shanghai"`。
+</ParamField>
+
+<ParamField body="weekdays" type="number[]">
+  `schedule_type` 为 `"weekly"` 时必填。0-6（周日到周六）。
+</ParamField>
+
+<ParamField body="batch_limit" type="number">
+  可选，每批上限。
+</ParamField>
+
+<ParamField body="ui_locale" type="string">
+  可选，界面语言，例如 `"zh"` 或 `"en"`。
+</ParamField>
+
+<Warning>
+  启动成功只表示计划已接入，真实发送须继续看目标状态。
+</Warning>
+
+## 请求示例
+
+```bash cURL
+curl -X POST "https://revor.ai/api/v2/websets/webset-uuid/smart-outreach/start" \
+  -H "Authorization: Bearer sk-revor-REPLACE_ME" \
+  -H "Idempotency-Key: outreach-start-001" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "agent_id": "agent-uuid",
+    "start_request_id": "req-uuid",
+    "expected_owner_agent_id": null,
+    "expected_ownership_version": 0,
+    "item_ids": ["item-uuid"],
+    "channels": ["email"],
+    "schedule_type": "daily",
+    "time_of_day": "09:00",
+    "timezone": "Asia/Shanghai",
+    "ui_locale": "zh"
+  }'
+```
+
+## 启动前准备
+
+<Steps>
+  <Step title="读取归属">
+    调用 `GET /websets/{id}/smart-outreach` 取得 `owner_agent_id` 和 `ownership_version`。
+  </Step>
+  <Step title="持久化缺失渠道映射">
+    启动前会为缺少渠道映射的渠道持久化既有的导入/调研联系人聚合映射，使控制台刷新后显示触达列。映射保存失败时不启动任务。
+  </Step>
+  <Step title="启动计划">
+    携带实际归属值调用 `POST /start`。
+  </Step>
+</Steps>
+
+<Note>
+  映射与计划不是一个事务：与页面先保存配置再启动的行为一致，后续启动失败仍可能保留配置。
+</Note>

@@ -1,0 +1,178 @@
+---
+title: "保存多轮触达配置"
+description: "保存或关闭智能体的多轮触达配置，支持版本保护。"
+api: "PUT https://revor.ai/api/v2/agents/{agentId}/sequence"
+authMethod: "bearer"
+playground: "simple"
+keywords:
+  - "Revor AI"
+  - "API v2"
+  - "保存多轮触达配置"
+---
+
+保存或关闭指定智能体的多轮触达配置。PUT 完整替换后续轮次，使用 GET 的 `version` 作为 `expected_version`。
+
+## 接口概览
+
+|  |  |
+| --- | --- |
+| 方法 | `PUT` |
+| 路径 | `/api/v2/agents/{agentId}/sequence` |
+| 权限 | `agents:write` |
+| 限流桶 | `outreach_write` |
+| 返回 | `item` 和 `result`（`published`/`existing`） |
+
+## 路径参数
+
+<ParamField path="agentId" type="string" required>
+  智能体 UUID。仅限 icebreaker 智能体。
+</ParamField>
+
+## 请求体
+
+<ParamField body="expected_version" type="integer" required>
+  GET 返回的 `version`，不是智能体的 `updated_at`。
+</ParamField>
+
+<ParamField body="enabled" type="boolean" required>
+  `true` 或 `false`。
+</ParamField>
+
+<ParamField body="rounds" type="array" required>
+  `1-10` 个后续轮次，每轮等待 `1-30` 天。
+
+  <Expandable title="轮次字段">
+    <ParamField body="rounds[].wait_days" type="integer" required>
+      等待天数，范围 `1-30`。
+    </ParamField>
+
+    <ParamField body="rounds[].strategy_key" type="string" required>
+      支持的策略:
+
+      - `value_add`
+      - `new_angle`
+      - `evidence`
+      - `share_resource`
+      - `address_concern`
+      - `next_step`
+      - `right_person`
+      - `graceful_close`
+      - `custom`
+    </ParamField>
+
+    <ParamField body="rounds[].content_generation_mode" type="string" required>
+      `ai_personalized` 或 `fixed_template`。
+    </ParamField>
+
+    <ParamField body="rounds[].content_input" type="string">
+      内容输入。也可独立提供 `ai_content`/`fixed_content` 草稿。
+    </ParamField>
+
+    <ParamField body="rounds[].attachment_mode" type="string">
+      `none`、`reuse` 或 `custom`。
+    </ParamField>
+
+    <ParamField body="rounds[].preview_research_enabled" type="boolean">
+      仅控制预览。
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<ParamField body="research_activation_version" type="integer">
+  需要正式发送时启用对应轮次的付费研究，必须同时明确传 `1`；省略时保留原正式研究授权。
+</ParamField>
+
+```bash cURL
+curl -X PUT "https://revor.ai/api/v2/agents/{agentId}/sequence" \
+  -H "Authorization: Bearer sk-revor-REPLACE_ME" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "expected_version": 0,
+    "enabled": true,
+    "rounds": [
+      {
+        "wait_days": 3,
+        "strategy_key": "value_add",
+        "content_generation_mode": "ai_personalized",
+        "content_input": "提供新的产品应用案例，询问是否需要样品",
+        "preview_research_enabled": false,
+        "attachment_mode": "none"
+      }
+    ]
+  }'
+```
+
+```json 请求体
+{
+  "expected_version": 0,
+  "enabled": true,
+  "rounds": [
+    {
+      "wait_days": 3,
+      "strategy_key": "value_add",
+      "content_generation_mode": "ai_personalized",
+      "content_input": "提供新的产品应用案例，询问是否需要样品",
+      "preview_research_enabled": false,
+      "attachment_mode": "none"
+    }
+  ]
+}
+```
+
+## 响应
+
+```json 200
+{
+  "ok": true,
+  "request_id": "req_xxx",
+  "item": {
+    "version": 1,
+    "enabled": true,
+    "updated_at": "2026-11-13T05:00:00.000+00:00"
+  },
+  "result": "published"
+}
+```
+
+## 轮次内容限制
+
+- 支持 `1-10` 个后续轮次，每轮等待 `1-30` 天。
+- 可使用单个 `content_input`，或独立 `ai_content`/`fixed_content` 草稿。提供任一草稿时按所选模式读取对应草稿。
+- 文本最多 `16,000` 字符。
+- 还可提供 `goal_type`、`supplementary_instruction`。
+
+## 附件
+
+- `reuse` 使用首轮已上传附件。
+- `custom` 的 `attachments` 必须与该智能体已上传附件的 `file_name`/`file_url`/`mime_type`/`size_bytes` 一致。
+- 最多 3 个且合计不超过 5 MB。此接口不上传附件。
+
+## WhatsApp 模板
+
+Meta WhatsApp 轮次可指定 `waba_template_binding_id` 与 `waba_template_connect_account_id`，服务端重新校验账号归属、模板用途及 `APPROVED` 状态，不接受客户端填写模板名称。
+
+## 行为说明
+
+- 版本冲突返回 `409` `agent_sequence_config_conflict`，请重新 GET 核对。
+- 关闭时提交 `enabled: false` 并携带已有的可编辑 rounds，不用空数组；不要把 GET 中只读字段原样写回。
+- 配置保存会复用现有发布服务，后台同步关联计划，可能接纳符合现有规则的历史首触达目标。
+- 关闭会收口后续计划；已发送事实不改写。
+- 保存成功不等于所有计划同步或所有在途发送已撤回。
+
+<Warning>
+  不要把此接口当成无副作用的草稿保存。保存成功不等于所有计划同步或所有在途发送已撤回。
+</Warning>
+
+## 错误码
+
+| HTTP | 错误码 | 含义 |
+| --- | --- | --- |
+| `400` | `agent_input_invalid` | 参数错误 |
+| `403` | `permission_denied` | 缺少 `agents:write` |
+| `404` | `agent_not_found` | 智能体不存在 |
+| `404` | `agent_sequence_unavailable` | 多轮触达未开放 |
+| `409` | `agent_sequence_config_conflict` | 版本过期或并发修改 |
+
+## MCP 工具
+
+`revor_update_agent_sequence`

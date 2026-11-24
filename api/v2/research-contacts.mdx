@@ -1,0 +1,118 @@
+---
+title: "Research company contacts"
+description: "Search for contacts associated with a verified official company domain."
+api: "POST https://revor.ai/api/v2/research/contacts"
+authMethod: "bearer"
+playground: "simple"
+keywords:
+  - "Revor AI"
+  - "API v2"
+  - "Research company contacts"
+---
+
+Search for contacts associated with a verified official company domain.
+
+## At a glance
+
+|  |  |
+| --- | --- |
+| Method | `POST` |
+| Path | `/api/v2/research/contacts` |
+| Permission | Contact your admin to confirm this endpoint is included in your product plan. |
+| Returns | Contact list and inferred organizational hierarchy |
+
+## Request
+
+`Idempotency-Key` is optional; send and reuse it when safe retries are required. You may send `Prefer: wait=20`. If the job finishes during the wait window, the endpoint returns HTTP `200`; otherwise it returns HTTP `202`, and the caller continues polling `/api/v2/jobs/{id}`.
+
+<Warning>
+  Use a verified official company domain. Do not substitute a company name or LinkedIn URL for the domain.
+</Warning>
+
+### Parameters
+
+<ParamField body="domain" type="string" required>
+  Official domain; protocol and `www.` are removed.
+</ParamField>
+
+<ParamField body="positions" type="string[]">
+  Up to 30 job-title keywords, each up to 80 characters.
+</ParamField>
+
+<ParamField body="limit" type="integer">
+  1-50; default 20.
+</ParamField>
+
+<ParamField body="locale" type="string">
+  `en` or `zh`; default `en`.
+</ParamField>
+
+### Example request
+
+```bash cURL
+curl -X POST "https://revor.ai/api/v2/research/contacts" \
+  -H "Authorization: Bearer sk-revor-REPLACE_ME" \
+  -H "Content-Type: application/json" \
+  -H "Prefer: wait=20" \
+  -d '{
+    "domain": "example.com",
+    "positions": ["procurement", "supply chain", "purchasing"],
+    "limit": 20,
+    "locale": "en"
+  }'
+```
+
+## Response
+
+```json 200
+{
+  "status": "done",
+  "domain": "example.com",
+  "company_name": "Example Inc.",
+  "contacts": [
+    {
+      "email": "alex@example.com",
+      "status": "valid",
+      "position": "VP Supply Chain",
+      "first_name": "Alex",
+      "last_name": "Morgan",
+      "full_name": "Alex Morgan",
+      "linkedin_url": "https://www.linkedin.com/in/example/"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "contact:alex@example.com",
+      "kind": "person",
+      "title": "VP Supply Chain",
+      "name": "Alex Morgan",
+      "email": "alex@example.com",
+      "status": "valid",
+      "linkedin_url": "https://www.linkedin.com/in/example/",
+      "department": "Supply Chain",
+      "seniority": "vp",
+      "sort_order": 1
+    }
+  ],
+  "edges": [
+    {
+      "from": "contact:alex@example.com",
+      "to": "department:supply-chain",
+      "relation": "member_of",
+      "confidence": 0.8,
+      "sort_order": 1
+    }
+  ],
+  "note": "The hierarchy is inferred from available contact titles and is not a verified reporting structure."
+}
+```
+
+### Result notes
+
+<Warning>
+  The organizational hierarchy is inferred from available job-title data; it is not a company-verified reporting structure. Upstream contact data is returned as received, and the API does not guess or correct identities.
+</Warning>
+
+<Note>
+  `result.status` is `done` when usable contacts are returned and `no_result` when the search completed without usable contacts. `no_result` is a successful empty result, not evidence about company size, transparency, or quality.
+</Note>
